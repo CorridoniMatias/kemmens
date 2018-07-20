@@ -10,7 +10,7 @@
 t_log * logger;
 
 
-void exit_gracefully(int);
+void exit_gracefully_plan(int);
 void InitPlanificador();
 void FreeStringArray(char**);
 

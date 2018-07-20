@@ -21,8 +21,7 @@ void FreeStringArray(char** array)
 
 //Todo lo que se debe liberar al hacer un exit se debe agregar en esta funcion en caso que no haya sido liberado antes!
 
-void exit_gracefully(int exit_code) {
+void exit_gracefully_plan(int exit_code) {
 	FreeConfig(&ConfigGeneral);
 	log_destroy(logger);
-	exit(exit_code);
 }
