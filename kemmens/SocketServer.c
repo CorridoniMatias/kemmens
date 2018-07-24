@@ -9,8 +9,13 @@
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
+#include <readline/readline.h>
+
+#define STDIN 0 //Input basico
 
 int sock = -1;
+fd_set descriptores_clientes;
 
 void SocketServer_Start(char name[5], t_log* logger, int port)
 {
@@ -41,7 +46,7 @@ void SocketServer_Start(char name[5], t_log* logger, int port)
 	}
 }
 
-void SocketServer_ListenForConnection(t_log* logger)
+void SocketServer_ListenForConnection(t_log* logger, void (*consoleInputHandle)())
 {
 	if(sock < 0)
 		return;
@@ -56,35 +61,85 @@ void SocketServer_ListenForConnection(t_log* logger)
 
 	connections = list_create();
 
-	int connected_socket;
+	int connlistsize, currconn, connected_socket, sel, max_fd = sock; //el descriptor maximo empieza como sock (el master y unico que hay por ahora) pero puede ser mas grande a medida que lleguen sockets.
 
-	struct sockaddr_in client;
-	//while(1)
+	//Si recibimos una funcion para manejar el procesamiento del input por linea se lo pasamos a readline.
+	if(consoleInputHandle != NULL)
+		rl_callback_handler_install("> ", (rl_vcpfunc_t*) consoleInputHandle);
+
+	while(1)
 	{
-		int c = sizeof(struct sockaddr_in);
-		printf("1");
-		connected_socket = accept(sock, (struct sockaddr*)&client, (socklen_t*)&c);
-		printf("2");
-		if(connected_socket < 0)
-		{printf("3");
-			log_error(logger, "'%s' -> Error al aceptar conexion entrante... skipeando conexion.", alias);
-			//continue;
+
+		//limpiamos el set de descriptores.
+		FD_ZERO(&descriptores_clientes);
+
+		//agregamos el socket principal "sock" a los descriptores, asi si llega una nueva conexion podemos aceptarla desde el select. cool right?
+		FD_SET(sock, &descriptores_clientes);
+
+		//Bloqueamos hasta que llegue algo.
+		sel = select( max_fd + STDIN + 1 // la cantidad va a ser max_fd + STDIN + 1 porque todos los sockets que nos lleguen tanto del teclado como de red tienen que entrar
+							, &descriptores_clientes // Le pasamos los descriptores.
+							, NULL , NULL , NULL); //Queremos que nuestro select bloquee indefinidamente, sino le pasamos un timeout.
+
+		if ((sel < 0) && (errno!=EINTR))
+		{
+			log_error(logger, "'%s' -> Error en select = %d", alias, sel);
+			continue;
 		}
-		printf("4");
-		close(sock);
-		return;
-		log_info(logger, "'%s' -> Conexion entrante aceptada en %d", connected_socket);
-		printf("5");
-		int* temp = malloc(sizeof(int));
-		memcpy(temp, &connected_socket, sizeof(int));
 
-		char* str = SocketCommons_ReceiveString(*temp);
-		printf("Recibido: '%s'", str);
-		free(str);
+		//algo le llego al socket principal
+		if (FD_ISSET(sock, &descriptores_clientes))
+		{
+			connected_socket = accept(sock, (struct sockaddr*)NULL, NULL);
+			if(connected_socket < 0)
+			{
+				log_error(logger, "'%s' -> Error al aceptar conexion entrante... skipeando conexion.", alias);
+				continue;
+			}
 
-		list_add(connections, temp);
+			log_info(logger, "'%s' -> Conexion entrante aceptada en %d", alias, connected_socket);
+
+			int* temp = malloc(sizeof(int));
+			memcpy(temp, &connected_socket, sizeof(int));
+			list_add(connections, temp);
+
+		}
+		else
+		{
+			connlistsize = list_size(connections);
+			for(int i = 0; i < connlistsize; i++)
+			{
+				currconn = *((int*)list_get(connections, i));
+				if (FD_ISSET(currconn, &descriptores_clientes))
+				{
+					//NOS LLEGA UN MENSAJE DE UN CLIENTE!
+
+					char* str = 0;
+							//while(1)
+							{
+								str = SocketCommons_ReceiveString(*temp);
+								printf("Recibido: '%s'\n", str);
+								if(strcmp(str, "close") == 0)
+									break;
+								free(str);
+							}
+
+
+					break;
+				}
+
+				//Si recorrimos toda la lista y en ningun lado obtuvimos el socket que buscabamos entonces problablemente sea teclado, lo dejamos saber poniendo en -1 el flag.
+				if(i == connlistsize-1)
+					currconn = -1;
+			}
+
+			if(currconn == -1) //Input de teclado
+				rl_callback_read_char(); //Readline nos hace el favor de ir acumulando los chars hasta recibir <enter>, ahi le manda la linea a consoleInputHandle.
+		}
+
 		sleep(1);
 	}
+	rl_callback_handler_remove(); //Deregistrar el callback de readline.
 	SocketServer_TerminateAllConnections(logger);
 }
 

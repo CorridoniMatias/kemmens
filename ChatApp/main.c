@@ -19,16 +19,16 @@ void exitok()
 
 void Server()
 {
-	SocketServer_Start("CHAT", logger, 8080);
+	SocketServer_Start("CHAT", logger, 8085);
 	SocketServer_ListenForConnection(logger);
 }
 
 void Client()
 {
 	printf("Conectando al server...\n");
-	int sock = SocketClient_ConnectToServer("8080");
+	int sock = SocketClient_ConnectToServer("8085");
 	printf("Socket asignado %d\n", sock);
-	//SocketCommons_SendMessageString(sock, "hola");
+	SocketCommons_SendMessageString(sock, "hola");
 }
 
 int main(int argc, char **argv)
