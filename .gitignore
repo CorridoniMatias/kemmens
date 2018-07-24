@@ -47,7 +47,6 @@
 Default/
 
 # Kernel Module Compile Results
-*.mk
 *.mod*
 *.cmd
 .tmp_versions/
