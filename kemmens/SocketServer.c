@@ -1,4 +1,5 @@
-#include "SocketServer.h"
+#include "kemmens/SocketServer.h"
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -11,7 +12,7 @@
 
 int sock = -1;
 
-void StartSocketServer(char name[5], t_log* logger, int port)
+void SocketServer_Start(char name[5], t_log* logger, int port)
 {
 	//Guardar el nombre para logs.
 	memcpy(alias, name, 5);
@@ -40,7 +41,7 @@ void StartSocketServer(char name[5], t_log* logger, int port)
 	}
 }
 
-void ListenForConnection(t_log* logger)
+void SocketServer_ListenForConnection(t_log* logger)
 {
 	if(sock < 0)
 		return;
@@ -74,7 +75,7 @@ void ListenForConnection(t_log* logger)
 	}
 }
 
-void TerminateConnections(t_log* logger)
+void SocketServer_TerminateAllConnections(t_log* logger)
 {
 	void cerrarconexion(void* conn)
 	{

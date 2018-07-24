@@ -1,4 +1,4 @@
-#include "megekemmen.h"
+#include "kemmens/megekemmen.h"
 
 void exit_gracefully(int exit_code)
 {
