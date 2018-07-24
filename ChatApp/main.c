@@ -25,8 +25,10 @@ void Server()
 
 void Client()
 {
+	printf("Conectando al server...\n");
 	int sock = SocketClient_ConnectToServer("8080");
-	SocketCommons_SendMessageString(sock, "hola");
+	printf("Socket asignado %d\n", sock);
+	//SocketCommons_SendMessageString(sock, "hola");
 }
 
 int main(int argc, char **argv)
@@ -40,7 +42,10 @@ int main(int argc, char **argv)
 
 	log_info(logger, "Iniciando ChatApp con instance name %s...", argv[1]);
 
-	Server();
+	if(strcmp("cli", argv[1]) == 0)
+		Client();
+	else
+		Server();
 
 	exitok();
 }

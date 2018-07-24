@@ -5,6 +5,7 @@
 #include <sys/socket.h> // Para crear sockets, enviar, recibir, etc
 #include <netdb.h> // Para getaddrinfo
 #include "SocketCommons.h"
+#include <string.h>
 
 int SocketClient_ConnectToServer(char* port);
 

@@ -58,27 +58,42 @@ void SocketServer_ListenForConnection(t_log* logger)
 
 	int connected_socket;
 
-	while(1)
+	struct sockaddr_in client;
+	//while(1)
 	{
-		connected_socket = accept(sock, (struct sockaddr*)NULL, NULL);
-
+		int c = sizeof(struct sockaddr_in);
+		printf("1");
+		connected_socket = accept(sock, (struct sockaddr*)&client, (socklen_t*)&c);
+		printf("2");
 		if(connected_socket < 0)
-		{
+		{printf("3");
 			log_error(logger, "'%s' -> Error al aceptar conexion entrante... skipeando conexion.", alias);
-			continue;
+			//continue;
 		}
-
+		printf("4");
+		close(sock);
+		return;
+		log_info(logger, "'%s' -> Conexion entrante aceptada en %d", connected_socket);
+		printf("5");
 		int* temp = malloc(sizeof(int));
 		memcpy(temp, &connected_socket, sizeof(int));
+
+		char* str = SocketCommons_ReceiveString(*temp);
+		printf("Recibido: '%s'", str);
+		free(str);
+
 		list_add(connections, temp);
 		sleep(1);
 	}
+	SocketServer_TerminateAllConnections(logger);
 }
 
 void SocketServer_TerminateAllConnections(t_log* logger)
 {
 	void cerrarconexion(void* conn)
 	{
+		log_info(logger, "'%s' -> Cerrando conexion %d ", (int)conn);
+
 		if(close( *((int*)conn) ) < 0)
 		{
 			log_error(logger, "'%s' -> Error al cerrar una conexion!", alias);
