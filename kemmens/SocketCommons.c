@@ -23,7 +23,7 @@ ContentHeader* SocketCommons_ReceiveHeader(int socket)
 	ContentHeader * header = SocketCommons_CreateHeader();
 	//Recibimos el Header, al ser un struct compartido, tanto el server como el client lo conocen y saben crearlo para informarle al otro el tamaño del mensaje que van a mandar.
 	int ret = recv(socket, header, sizeof(ContentHeader), 0);
-	if(ret == -1)
+	if(ret < 1)
 	{
 		free(header);
 		return 0;
@@ -60,15 +60,14 @@ int SocketCommons_SendHeader(int socket, int length)
 char* SocketCommons_ReceiveString(int socket)
 {
 	int length = SocketCommons_GetMessageLength(socket);
-	printf("Lengh obtenido %d\n", length);
 
-	if(length == -1)
+	if(length < 1)
 		return 0;
 
 	char* str = (char*)malloc(length+1); //+1 porque le vamos a agregar el \0
 	int status = recv(socket, str, length, MSG_WAITALL);
 
-	if(status == -1)
+	if(status < 1)
 	{
 		free(str);
 		return 0;

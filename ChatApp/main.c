@@ -3,6 +3,7 @@
 #include "readline/readline.h"
 #include "kemmens/SocketServer.h"
 #include "kemmens/SocketClient.h"
+#include <unistd.h>
 
 t_log * logger;
 
@@ -17,18 +18,38 @@ void exitok()
 	exit_gracefully_custom(cleanup, EXIT_SUCCESS);
 }
 
+void processLineInput(char* line)
+{
+	printf("Comando: %s\n", line);
+	if(strcmp(line, "stop") == 0)
+	{
+		free(line);
+		SocketServer_Stop();
+		return;
+	}
+
+	free(line);
+}
+
 void Server()
 {
 	SocketServer_Start("CHAT", logger, 8085);
-	SocketServer_ListenForConnection(logger);
+	SocketServer_ListenForConnection(logger, processLineInput);
+	//SocketServer_ListenForConnection(logger, 0);
 }
 
-void Client()
+void Client(char* texto)
 {
 	printf("Conectando al server...\n");
 	int sock = SocketClient_ConnectToServer("8085");
 	printf("Socket asignado %d\n", sock);
-	SocketCommons_SendMessageString(sock, "hola");
+	int m;
+	while(1)
+	{
+		m = SocketCommons_SendMessageString(sock, texto);
+		printf("String enviado. Retorno %d\n", m);
+		sleep(1);
+	}
 }
 
 int main(int argc, char **argv)
@@ -43,7 +64,15 @@ int main(int argc, char **argv)
 	log_info(logger, "Iniciando ChatApp con instance name %s...", argv[1]);
 
 	if(strcmp("cli", argv[1]) == 0)
-		Client();
+	{
+		if(argc < 3)
+		{
+			printf("Debe ingresar el texto a mandar como parametro.\n");
+			exitok();
+		}
+
+		Client(argv[2]);
+	}
 	else
 		Server();
 
