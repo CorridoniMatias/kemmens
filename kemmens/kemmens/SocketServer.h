@@ -16,6 +16,7 @@ void SocketServer_TerminateAllConnections(t_log* logger);
 void SocketServer_ListenForConnection(t_log* logger, void (*consoleInputHandle)(char* line));
 void SocketServer_Start(char name[5], t_log* logger, int port);
 void SocketServer_Stop();
+t_list* SocketServer_GetConnectedClients();
 
 
 #endif

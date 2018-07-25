@@ -189,3 +189,8 @@ void SocketServer_Stop()
 {
 	closeAll = 1;
 }
+
+t_list* SocketServer_GetConnectedClients()
+{
+	return connections;
+}

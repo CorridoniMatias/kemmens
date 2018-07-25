@@ -10,8 +10,7 @@ int SocketCommons_SendMessageString(int socket, char* message)
 {
 	int leng = string_length(message);
 	int status = SocketCommons_SendHeader(socket, leng);
-
-	if(status == -1)
+	if(status < 0)
 		return -2;
 
 	return send(socket, message, leng, 0);

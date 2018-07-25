@@ -35,6 +35,7 @@ void Server()
 {
 	SocketServer_Start("CHAT", logger, 8085);
 	SocketServer_ListenForConnection(logger, processLineInput);
+	printf("SERVER SHUTDOWN\n");
 	//SocketServer_ListenForConnection(logger, 0);
 }
 
@@ -44,10 +45,17 @@ void Client(char* texto)
 	int sock = SocketClient_ConnectToServer("8085");
 	printf("Socket asignado %d\n", sock);
 	int m;
+	char* asd = (char*)malloc(1);
 	while(1)
 	{
+		printf("WHILE\n");
 		m = SocketCommons_SendMessageString(sock, texto);
 		printf("String enviado. Retorno %d\n", m);
+		int st = recv(sock, asd, 0, MSG_WAITALL);
+		free(asd);
+		printf("RECV = %d\n", st);
+		if(st == 0)
+			break;
 		sleep(1);
 	}
 }
@@ -72,9 +80,12 @@ int main(int argc, char **argv)
 		}
 
 		Client(argv[2]);
+		printf("Client end\n");
 	}
 	else
 		Server();
+
+	sleep(10);
 
 	exitok();
 }
