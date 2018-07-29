@@ -1,8 +1,9 @@
-#include "kemmens/megekemmen.h"
 #include "commons/log.h"
 #include "readline/readline.h"
+#include "kemmens/megekemmen.h"
 #include "kemmens/SocketServer.h"
 #include "kemmens/SocketClient.h"
+#include "kemmens/ThreadManager.h"
 #include <unistd.h>
 
 t_log * logger;
@@ -31,25 +32,47 @@ void processLineInput(char* line)
 	free(line);
 }
 
-void Server()
+void* Server()
 {
-	SocketServer_Start("CHAT", logger, 8085);
+	SocketServer_Start("CHAT", logger, 8086);
 	SocketServer_ListenForConnection(logger, processLineInput);
 	printf("SERVER SHUTDOWN\n");
 	//SocketServer_ListenForConnection(logger, 0);
+	return NULL;
 }
 
 void Client(char* texto)
 {
 	printf("Conectando al server...\n");
-	int sock = SocketClient_ConnectToServer("8085");
+	int sock = SocketClient_ConnectToServer("8086");
+	printf("Socket asignado %d\n", sock);
+	int m;
+	//char* asd = (char*)malloc(1);
+	while(1)
+	{
+		printf("WHILE\n");
+		m = SocketCommons_SendMessageString(sock, texto);
+		printf("String enviado. Retorno %d\n", m);
+		//int st = recv(sock, asd, 0, MSG_WAITALL);
+		//free(asd);
+		//printf("RECV = %d\n", st);
+		//if(st == 0)
+			//break;
+		sleep(1);
+	}
+}
+
+void* ClientServer(void* port)
+{
+	printf("Conectando al server...\n");
+	int sock = SocketClient_ConnectToServer( ((char*)port) );
 	printf("Socket asignado %d\n", sock);
 	int m;
 	char* asd = (char*)malloc(1);
 	while(1)
 	{
 		printf("WHILE\n");
-		m = SocketCommons_SendMessageString(sock, texto);
+		m = SocketCommons_SendMessageString(sock, "Hello World!");
 		printf("String enviado. Retorno %d\n", m);
 		int st = recv(sock, asd, 0, MSG_WAITALL);
 		free(asd);
@@ -58,6 +81,8 @@ void Client(char* texto)
 			break;
 		sleep(1);
 	}
+
+	return NULL;
 }
 
 int main(int argc, char **argv)
@@ -83,9 +108,22 @@ int main(int argc, char **argv)
 		printf("Client end\n");
 	}
 	else
-		Server();
+	{
+		if(argc < 3)
+		{
+			Server();
+		} else
+		{
+			pthread_t threadServer, threadClient;
 
-	sleep(10);
+			ThreadManager_CreateThread(logger, &threadServer, Server, NULL);
+			ThreadManager_CreateThread(logger, &threadClient, ClientServer, ((void*) argv[2]) );
+			printf("RUNNING THREADS\n");
+			pthread_join(threadServer, NULL);
+			pthread_join(threadClient, NULL);
+			printf("JOINED BOTH\n");
+		}
+	}
 
 	exitok();
 }
