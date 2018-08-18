@@ -51,7 +51,7 @@ void Client(char* texto)
 	while(1)
 	{
 		printf("WHILE\n");
-		m = SocketCommons_SendMessageString(sock, texto);
+		m = SocketCommons_SendMessageString(logger, sock, texto);
 		printf("String enviado. Retorno %d\n", m);
 		//int st = recv(sock, asd, 0, MSG_WAITALL);
 		//free(asd);
@@ -72,7 +72,7 @@ void* ClientServer(void* port)
 	while(1)
 	{
 		printf("WHILE\n");
-		m = SocketCommons_SendMessageString(sock, "Hello World!");
+		m = SocketCommons_SendMessageString(logger, sock, "Hello World!");
 		printf("String enviado. Retorno %d\n", m);
 		int st = recv(sock, asd, 0, MSG_WAITALL);
 		free(asd);
@@ -87,6 +87,7 @@ void* ClientServer(void* port)
 
 int main(int argc, char **argv)
 {
+
 	logger = log_create("./chatapp.log", "CHATAPP", true, LOG_LEVEL_DEBUG);
 	if(argc < 2)
 	{

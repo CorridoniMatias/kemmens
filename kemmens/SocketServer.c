@@ -133,16 +133,23 @@ void SocketServer_ListenForConnection(t_log* logger, void (*consoleInputHandle)(
 				if (FD_ISSET(currconn, &descriptores_clientes))
 				{
 					//NOS LLEGA UN MENSAJE DE UN CLIENTE!
-					char* str = 0;
-					str = SocketCommons_ReceiveString(currconn); //TODO: Hacer una funcion que reciba un struct de datos en vez de string por si se llega a necesitar.
-					if(str == 0) //Hubo un error al recibir o recv devolvio 0 o sea nos cerraron el socket.
+					int message_type = -1;
+					void* data;
+					data = SocketCommons_ReceiveData(logger, currconn, &message_type);
+
+					if(data == 0) //Hubo un error al recibir o recv devolvio 0 o sea nos cerraron el socket.
 					{
 						free(list_remove(connections, i));
 					} else
 					{
-						printf("Recibido: '%s'\n", str);
-						//TODO: Aca deberia ir alguna funcion especial que se encargue de la recepcion.
-						free(str);
+						//TODO: Aca deberia ir alguna funcion especial que se encargue de la recepcion, recibir por parametro?
+
+						if(message_type == MESSAGETYPE_STRING)
+						{
+							printf("STRING RECIBIDO: %s\n", ((char*)data) );
+						}
+
+						free(data);
 					}
 					break;
 				}

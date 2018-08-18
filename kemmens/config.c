@@ -1,3 +1,5 @@
+#include "kemmens/config.h"
+
 ///FUNCIONES DE ARCHIVOS DE CONFIGURACION
 
 //Crea un archivo de configuracion a guardar en path, con los campos ingresados por parametro

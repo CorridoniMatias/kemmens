@@ -1,3 +1,6 @@
+#ifndef CONFIGKEMMENS_H_
+#define CONFIGKEMMENS_H_
+
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -21,3 +24,5 @@ void archivoConfigSetearCampo(t_config* archivoConfig, char* campo, char* valor)
 bool archivoConfigInvalido(t_config* archivoConfig, char** campos);
 bool archivoConfigInexistente(t_config* archivoConfig);
 bool archivoConfigIncompleto(t_config* archivoConfig, char** campos);
+
+#endif /* CONFIGKEMMENS_H_ */
