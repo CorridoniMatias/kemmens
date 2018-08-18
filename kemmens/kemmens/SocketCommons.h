@@ -68,4 +68,11 @@ char* SocketCommons_ReceiveStringWithLength(t_log* log, int socket, int length);
  */
 void* SocketCommons_ReceiveData(t_log* log, int socket, int* message_type);
 
+
+/*		Envia datos por el socket indicado. El tipo puesto en message_type debe ser un tipo conocido y definido en SocketMessageTypes.h, data contiene los datos a ser enviado y dataLength es el largo de lo contenido en la variable data.
+ *
+ * 		retorna el estado de envio.
+ */
+int SocketCommons_SendData(t_log* log, int socket, int message_type, void* data, int dataLength);
+
 #endif /* SOCKETCOMMONS_H_ */

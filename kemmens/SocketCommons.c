@@ -121,6 +121,21 @@ void* SocketCommons_ReceiveData(t_log* log, int socket, int* message_type)
 	return buffer;
 }
 
+int SocketCommons_SendData(t_log* log, int socket, int message_type, void* data, int dataLength)
+{
+	int status = SocketCommons_SendHeader(log, socket, dataLength, message_type);
+
+	if(status < 0)
+		return -2;
+
+	status = send(socket, data, dataLength, MSG_WAITALL);
+
+	if(status < 0)
+		log_error(log, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_SendData - Error al enviar data, codigo: %d", status);
+
+	return status;
+}
+
 
 
 

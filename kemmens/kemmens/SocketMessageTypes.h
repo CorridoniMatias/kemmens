@@ -6,7 +6,7 @@
 
 //Message Types
 
-#define MESSAGETYPE_STRING 1
+#define MESSAGETYPE_STRING 1	//Strings puras
 
 
 #endif /* KEMMENS_SOCKETMESSAGETYPES_H_ */
