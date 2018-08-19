@@ -9,6 +9,7 @@ C_SRCS += \
 ../SocketServer.c \
 ../ThreadManager.c \
 ../config.c \
+../logger.c \
 ../megekemmen.c 
 
 OBJS += \
@@ -17,6 +18,7 @@ OBJS += \
 ./SocketServer.o \
 ./ThreadManager.o \
 ./config.o \
+./logger.o \
 ./megekemmen.o 
 
 C_DEPS += \
@@ -25,6 +27,7 @@ C_DEPS += \
 ./SocketServer.d \
 ./ThreadManager.d \
 ./config.d \
+./logger.d \
 ./megekemmen.d 
 
 

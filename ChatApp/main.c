@@ -4,14 +4,12 @@
 #include "kemmens/SocketServer.h"
 #include "kemmens/SocketClient.h"
 #include "kemmens/ThreadManager.h"
+#include "kemmens/logger.h"
 #include <unistd.h>
-
-t_log * logger;
 
 void cleanup()
 {
-	if(logger != NULL) //Sin este check y si no se creo el logger -> segmentation fault.
-		log_destroy(logger);
+	//Aca se podria hacer un cleanup custom
 }
 
 void exitok()
@@ -87,7 +85,11 @@ void* ClientServer(void* port)
 
 int main(int argc, char **argv)
 {
+	Logger_CreateLog("./chatapp.log", "CHARAPP", true);
+	log_info(Logger_GetLog(), "prueba %d", 1);
+	//Logger_DestroyLog();
 
+	/*
 	logger = log_create("./chatapp.log", "CHATAPP", true, LOG_LEVEL_DEBUG);
 	if(argc < 2)
 	{
@@ -125,6 +127,6 @@ int main(int argc, char **argv)
 			printf("JOINED BOTH\n");
 		}
 	}
-
+*/
 	exitok();
 }
