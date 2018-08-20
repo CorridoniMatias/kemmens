@@ -3,7 +3,7 @@
 
 #include <pthread.h>
 #include <stdio.h>
-#include <commons/log.h>
+#include "logger.h"
 
 /*	Mallocea un pthread_t.
  *
@@ -15,11 +15,11 @@ pthread_t* ThreadManager_MallocThread();
 
 /*	Crea un thread que no esta detached.
  */
-int ThreadManager_CreateThread(t_log* logger, pthread_t* thread, void *(*startingPoint) (void *), void *__restrict argument);
+int ThreadManager_CreateThread(pthread_t* thread, void *(*startingPoint) (void *), void *__restrict argument);
 
 /*	Crea un thread y hace el detach del mismo.
  *
  */
-int ThreadManager_CreateDetachedThread(t_log* logger, pthread_t* thread, void *(*startingPoint) (void *), void *__restrict argument);
+int ThreadManager_CreateDetachedThread(pthread_t* thread, void *(*startingPoint) (void *), void *__restrict argument);
 
 #endif /* KEMMENS_THREADMANAGER_H_ */

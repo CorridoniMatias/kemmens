@@ -32,8 +32,8 @@ void processLineInput(char* line)
 
 void* Server()
 {
-	SocketServer_Start("CHAT", logger, 8086);
-	SocketServer_ListenForConnection(logger, processLineInput);
+	SocketServer_Start("CHAT", 8086);
+	SocketServer_ListenForConnection(processLineInput);
 	printf("SERVER SHUTDOWN\n");
 	//SocketServer_ListenForConnection(logger, 0);
 	return NULL;
@@ -49,7 +49,7 @@ void Client(char* texto)
 	while(1)
 	{
 		printf("WHILE\n");
-		m = SocketCommons_SendMessageString(logger, sock, texto);
+		m = SocketCommons_SendMessageString(sock, texto);
 		printf("String enviado. Retorno %d\n", m);
 		//int st = recv(sock, asd, 0, MSG_WAITALL);
 		//free(asd);
@@ -70,7 +70,7 @@ void* ClientServer(void* port)
 	while(1)
 	{
 		printf("WHILE\n");
-		m = SocketCommons_SendMessageString(logger, sock, "Hello World!");
+		m = SocketCommons_SendMessageString(sock, "Hello World!");
 		printf("String enviado. Retorno %d\n", m);
 		int st = recv(sock, asd, 0, MSG_WAITALL);
 		free(asd);
@@ -86,18 +86,14 @@ void* ClientServer(void* port)
 int main(int argc, char **argv)
 {
 	Logger_CreateLog("./chatapp.log", "CHARAPP", true);
-	log_info(Logger_GetLog(), "prueba %d", 1);
-	//Logger_DestroyLog();
 
-	/*
-	logger = log_create("./chatapp.log", "CHATAPP", true, LOG_LEVEL_DEBUG);
 	if(argc < 2)
 	{
 		printf("Debe ingresar el nombre de la instancia como parametro.\n");
 		exitok();
 	}
 
-	log_info(logger, "Iniciando ChatApp con instance name %s...", argv[1]);
+	Logger_Log(LOG_INFO, "Iniciando ChatApp con instance name %s...", argv[1]);
 
 	if(strcmp("cli", argv[1]) == 0)
 	{
@@ -119,14 +115,14 @@ int main(int argc, char **argv)
 		{
 			pthread_t threadServer, threadClient;
 
-			ThreadManager_CreateThread(logger, &threadServer, Server, NULL);
-			ThreadManager_CreateThread(logger, &threadClient, ClientServer, ((void*) argv[2]) );
+			ThreadManager_CreateThread(&threadServer, Server, NULL);
+			ThreadManager_CreateThread(&threadClient, ClientServer, ((void*) argv[2]) );
 			printf("RUNNING THREADS\n");
 			pthread_join(threadServer, NULL);
 			pthread_join(threadClient, NULL);
 			printf("JOINED BOTH\n");
 		}
 	}
-*/
+
 	exitok();
 }

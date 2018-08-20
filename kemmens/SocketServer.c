@@ -18,7 +18,7 @@ int sock = -1;
 int closeAll = 0;
 fd_set descriptores_clientes;
 
-void SocketServer_Start(char name[5], t_log* logger, int port)
+void SocketServer_Start(char name[5], int port)
 {
 	//Guardar el nombre para logs.
 	memcpy(alias, name, 5);
@@ -29,11 +29,11 @@ void SocketServer_Start(char name[5], t_log* logger, int port)
 
 	if(sock == -1)
 	{
-		log_error(logger, "Error al abrir socket del servidor!");
+		Logger_Log(LOG_ERROR, "Error al abrir socket del servidor!");
 		exit_gracefully(EXIT_FAILURE);
 	}
 
-	log_info(logger, "Socket de servidor '%s' creado con exito.", alias);
+	Logger_Log(LOG_INFO, "Socket de servidor '%s' creado con exito.", alias);
 
 
 	serv_addr.sin_family = AF_INET;
@@ -42,23 +42,23 @@ void SocketServer_Start(char name[5], t_log* logger, int port)
 
 	if( bind(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
 	{
-		log_error(logger, "Error al bindear servidor '%s'!", alias);
+		Logger_Log(LOG_ERROR, "Error al bindear servidor '%s'!", alias);
 		exit_gracefully(EXIT_FAILURE);
 	}
 }
 
-void SocketServer_ListenForConnection(t_log* logger, void (*consoleInputHandle)(char* line))
+void SocketServer_ListenForConnection(void (*consoleInputHandle)(char* line))
 {
 	if(sock < 0)
 		return;
 
 	if(listen(sock, MAXWAITCONNECTIONS) < 0)
 	{
-		log_error(logger, "'%s' -> Error al escuchar conexiones!", alias);
+		Logger_Log(LOG_ERROR,"'%s' -> Error al escuchar conexiones!", alias);
 		exit_gracefully(EXIT_FAILURE);
 	}
 
-	log_info(logger, "Servidor '%s' escuchando por conexiones entrantes...", alias);
+	Logger_Log(LOG_INFO, "Servidor '%s' escuchando por conexiones entrantes...", alias);
 
 	connections = list_create();
 
@@ -99,7 +99,7 @@ void SocketServer_ListenForConnection(t_log* logger, void (*consoleInputHandle)(
 
 		if ((sel < 0) && (errno!=EINTR))
 		{
-			log_error(logger, "'%s' -> Error en select = %d", alias, sel);
+			Logger_Log(LOG_ERROR, "'%s' -> Error en select = %d", alias, sel);
 			continue;
 		}
 
@@ -109,11 +109,11 @@ void SocketServer_ListenForConnection(t_log* logger, void (*consoleInputHandle)(
 			connected_socket = accept(sock, (struct sockaddr*)NULL, NULL);
 			if(connected_socket < 0)
 			{
-				log_error(logger, "'%s' -> Error al aceptar conexion entrante... skipeando conexion.", alias);
+				Logger_Log(LOG_ERROR, "'%s' -> Error al aceptar conexion entrante... skipeando conexion.", alias);
 				continue;
 			}
 
-			log_info(logger, "'%s' -> Conexion entrante aceptada en %d", alias, connected_socket);
+			Logger_Log(LOG_INFO, "'%s' -> Conexion entrante aceptada en %d", alias, connected_socket);
 
 			int* temp = malloc(sizeof(int)); //el free a esto se hace cuando se cierra la conexion con este socket.
 			memcpy(temp, &connected_socket, sizeof(int));
@@ -135,7 +135,7 @@ void SocketServer_ListenForConnection(t_log* logger, void (*consoleInputHandle)(
 					//NOS LLEGA UN MENSAJE DE UN CLIENTE!
 					int message_type = -1;
 					void* data;
-					data = SocketCommons_ReceiveData(logger, currconn, &message_type);
+					data = SocketCommons_ReceiveData(currconn, &message_type);
 
 					if(data == 0) //Hubo un error al recibir o recv devolvio 0 o sea nos cerraron el socket.
 					{
@@ -172,18 +172,18 @@ void SocketServer_ListenForConnection(t_log* logger, void (*consoleInputHandle)(
 	if(consoleInputHandle != NULL)
 		rl_callback_handler_remove(); //Deregistrar el callback de readline.
 
-	SocketServer_TerminateAllConnections(logger);
+	SocketServer_TerminateAllConnections();
 }
 
-void SocketServer_TerminateAllConnections(t_log* logger)
+void SocketServer_TerminateAllConnections()
 {
 	void cerrarconexion(void* conn)
 	{
-		log_info(logger, "'%s' -> Cerrando conexion %d ", alias, *((int*)conn));
+		Logger_Log(LOG_INFO, "'%s' -> Cerrando conexion %d ", alias, *((int*)conn));
 
 		if(close( *((int*)conn) ) < 0)
 		{
-			log_error(logger, "'%s' -> Error al cerrar conexion %d!", alias, *((int*)conn));
+			Logger_Log(LOG_ERROR, "'%s' -> Error al cerrar conexion %d!", alias, *((int*)conn));
 		}
 	}
 

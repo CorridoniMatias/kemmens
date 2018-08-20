@@ -4,7 +4,7 @@
 #include "megekemmen.h"
 #include <string.h>
 #include <commons/collections/list.h>
-#include <commons/log.h>
+#include "logger.h"
 #include "SocketCommons.h"
 
 #define MAXWAITCONNECTIONS 10
@@ -12,9 +12,9 @@
 t_list* connections;
 
 char alias[5];
-void SocketServer_TerminateAllConnections(t_log* logger);
-void SocketServer_ListenForConnection(t_log* logger, void (*consoleInputHandle)(char* line));
-void SocketServer_Start(char name[5], t_log* logger, int port);
+void SocketServer_TerminateAllConnections();
+void SocketServer_ListenForConnection(void (*consoleInputHandle)(char* line));
+void SocketServer_Start(char name[5], int port);
 void SocketServer_Stop();
 t_list* SocketServer_GetConnectedClients();
 

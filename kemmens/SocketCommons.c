@@ -6,17 +6,13 @@ ContentHeader* SocketCommons_CreateHeader()
 	return (ContentHeader*)malloc(sizeof(ContentHeader));
 }
 
-int SocketCommons_SendMessageString(t_log* log, int socket, char* message)
+int SocketCommons_SendMessageString(int socket, char* message)
 {
 	int leng = string_length(message);
-	int status = SocketCommons_SendHeader(log, socket, leng, MESSAGETYPE_STRING);
-	if(status < 0)
-		return -2;
-
-	return send(socket, message, leng, 0);
+	return SocketCommons_SendData(socket, MESSAGETYPE_STRING, message, leng);
 }
 
-ContentHeader* SocketCommons_ReceiveHeader(t_log* log, int socket)
+ContentHeader* SocketCommons_ReceiveHeader(int socket)
 {
 	//Creamos el header que nos va a dar el lengh del tamaño de lo que sea que vamos a recibir posteriormente en el "body"
 	ContentHeader * header = SocketCommons_CreateHeader();
@@ -25,7 +21,7 @@ ContentHeader* SocketCommons_ReceiveHeader(t_log* log, int socket)
 
 	if(ret < 1)
 	{
-		log_error(log, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveHeader - Error al recibir header, codigo: %d", ret);
+		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveHeader - Error al recibir header, codigo: %d", ret);
 		free(header);
 		return 0;
 	}
@@ -33,9 +29,9 @@ ContentHeader* SocketCommons_ReceiveHeader(t_log* log, int socket)
 	return header;
 }
 
-int SocketCommons_GetMessageLength(t_log* log, int socket)
+int SocketCommons_GetMessageLength(int socket)
 {
-	ContentHeader * header = SocketCommons_ReceiveHeader(log, socket);
+	ContentHeader * header = SocketCommons_ReceiveHeader(socket);
 
 	if(header == 0)
 		return -1;
@@ -47,7 +43,7 @@ int SocketCommons_GetMessageLength(t_log* log, int socket)
 	return length;
 }
 
-int SocketCommons_SendHeader(t_log* log, int socket, int length, int message_type)
+int SocketCommons_SendHeader(int socket, int length, int message_type)
 {
 	ContentHeader * header = SocketCommons_CreateHeader();
 	header->body_length = length;
@@ -55,21 +51,21 @@ int SocketCommons_SendHeader(t_log* log, int socket, int length, int message_typ
 	int status = send(socket, header, sizeof(ContentHeader), MSG_WAITALL);
 
 	if(status < 0)
-		log_error(log, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_SendHeader - Error al enviar header, codigo: %d", status);
+		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_SendHeader - Error al enviar header, codigo: %d", status);
 
 	free(header);
 
 	return status;
 }
 
-char* SocketCommons_ReceiveString(t_log* log, int socket)
+char* SocketCommons_ReceiveString(int socket)
 {
-	int length = SocketCommons_GetMessageLength(log, socket);
+	int length = SocketCommons_GetMessageLength(socket);
 
-	return SocketCommons_ReceiveStringWithLength(log, socket, length);
+	return SocketCommons_ReceiveStringWithLength(socket, length);
 }
 
-char* SocketCommons_ReceiveStringWithLength(t_log* log, int socket, int length)
+char* SocketCommons_ReceiveStringWithLength(int socket, int length)
 {
 	if(length < 1)
 		return 0;
@@ -79,7 +75,7 @@ char* SocketCommons_ReceiveStringWithLength(t_log* log, int socket, int length)
 
 	if(status < 1)
 	{
-		log_error(log, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveStringWithLength - Error al recibir string, codigo: %d", status);
+		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveStringWithLength - Error al recibir string, codigo: %d", status);
 		free(str);
 		return 0;
 	}
@@ -87,9 +83,9 @@ char* SocketCommons_ReceiveStringWithLength(t_log* log, int socket, int length)
 	return str;
 }
 
-void* SocketCommons_ReceiveData(t_log* log, int socket, int* message_type)
+void* SocketCommons_ReceiveData(int socket, int* message_type)
 {
-	ContentHeader* header = SocketCommons_ReceiveHeader(log, socket);
+	ContentHeader* header = SocketCommons_ReceiveHeader(socket);
 
 	if(header == 0)
 		return 0;
@@ -99,12 +95,12 @@ void* SocketCommons_ReceiveData(t_log* log, int socket, int* message_type)
 	*message_type = header->message_type;
 	free(header);
 
-	log_info(log, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - Recibiendo datos, length: %d, content type: %d", len, *message_type);
+	Logger_Log((void*)log_info, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - Recibiendo datos, length: %d, content type: %d", len, *message_type);
 
 	//los strings necesitan un manejo especial con el \0 por eso hacemos esto.
 	if(*message_type == MESSAGETYPE_STRING)
 	{
-		return SocketCommons_ReceiveStringWithLength(log, socket, len);
+		return SocketCommons_ReceiveStringWithLength(socket, len);
 	}
 
 	void* buffer = malloc(len);
@@ -113,7 +109,7 @@ void* SocketCommons_ReceiveData(t_log* log, int socket, int* message_type)
 
 	if(status < 1)
 	{
-		log_error(log, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - Error al recibir datos, codigo: %d", status);
+		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - Error al recibir datos, codigo: %d", status);
 		free(buffer);
 		return 0;
 	}
@@ -121,9 +117,9 @@ void* SocketCommons_ReceiveData(t_log* log, int socket, int* message_type)
 	return buffer;
 }
 
-int SocketCommons_SendData(t_log* log, int socket, int message_type, void* data, int dataLength)
+int SocketCommons_SendData(int socket, int message_type, void* data, int dataLength)
 {
-	int status = SocketCommons_SendHeader(log, socket, dataLength, message_type);
+	int status = SocketCommons_SendHeader(socket, dataLength, message_type);
 
 	if(status < 0)
 		return -2;
@@ -131,7 +127,7 @@ int SocketCommons_SendData(t_log* log, int socket, int message_type, void* data,
 	status = send(socket, data, dataLength, MSG_WAITALL);
 
 	if(status < 0)
-		log_error(log, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_SendData - Error al enviar data, codigo: %d", status);
+		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_SendData - Error al enviar data, codigo: %d", status);
 
 	return status;
 }
