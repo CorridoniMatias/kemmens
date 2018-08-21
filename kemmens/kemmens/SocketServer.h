@@ -13,7 +13,7 @@ t_list* connections;
 
 char alias[5];
 void SocketServer_TerminateAllConnections();
-void SocketServer_ListenForConnection(void (*consoleInputHandle)(char* line));
+void SocketServer_ListenForConnection(void (*onPacketArrived)(int socketID, int messageType, void* actualData), void (*consoleInputHandle)(char* line));
 void SocketServer_Start(char name[5], int port);
 void SocketServer_Stop();
 t_list* SocketServer_GetConnectedClients();

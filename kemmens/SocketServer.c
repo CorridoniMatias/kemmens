@@ -47,7 +47,7 @@ void SocketServer_Start(char name[5], int port)
 	}
 }
 
-void SocketServer_ListenForConnection(void (*consoleInputHandle)(char* line))
+void SocketServer_ListenForConnection(void (*onPacketArrived)(int socketID, int messageType, void* actualData), void (*consoleInputHandle)(char* line))
 {
 	if(sock < 0)
 		return;
@@ -142,14 +142,8 @@ void SocketServer_ListenForConnection(void (*consoleInputHandle)(char* line))
 						free(list_remove(connections, i));
 					} else
 					{
-						//TODO: Aca deberia ir alguna funcion especial que se encargue de la recepcion, recibir por parametro?
-
-						if(message_type == MESSAGETYPE_STRING)
-						{
-							printf("STRING RECIBIDO: %s\n", ((char*)data) );
-						}
-
-						free(data);
+						//OJO! Se debe hacer free(data) en la funcion que atienda la llegada del paquete.
+						onPacketArrived(currconn,  message_type, data);
 					}
 					break;
 				}

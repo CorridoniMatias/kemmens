@@ -32,7 +32,10 @@ bool Logger_IsLoggerValid()
 void Logger_Log(void (*logFunction)(t_log*, const char*), char* message, ...)
 {
 	if(!Logger_IsLoggerValid())
+	{
+		printf("KEMMENSLIB->Logger :: Logger_Log - El logger nunca fue inicializado! Error al loguear.\n");
 		return;
+	}
 
 	va_list arguments;
 	va_start(arguments, message);

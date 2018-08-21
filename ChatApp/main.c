@@ -5,11 +5,26 @@
 #include "kemmens/SocketClient.h"
 #include "kemmens/ThreadManager.h"
 #include "kemmens/logger.h"
+#include "kemmens/SocketMessageTypes.h"
+#include "kemmens/SocketCommons.h"
 #include <unistd.h>
+
+bool recibir = true;
 
 void cleanup()
 {
 	//Aca se podria hacer un cleanup custom
+}
+
+void onPacketArrived(int socketID, int message_type, void* data)
+{
+	if(message_type == MESSAGETYPE_STRING)
+	{
+		printf("STRING RECIBIDO: %s\n", ((char*)data) );
+		SocketCommons_SendMessageString(socketID, "Recibido!");
+	}
+
+	free(data);
 }
 
 void exitok()
@@ -33,10 +48,25 @@ void processLineInput(char* line)
 void* Server()
 {
 	SocketServer_Start("CHAT", 8086);
-	SocketServer_ListenForConnection(processLineInput);
+	SocketServer_ListenForConnection(onPacketArrived, processLineInput);
 	printf("SERVER SHUTDOWN\n");
 	//SocketServer_ListenForConnection(logger, 0);
 	return NULL;
+}
+
+void* ClientManageReceptions(void* socket)
+{
+	char* res;
+	//while(1)
+	{
+		res = SocketCommons_ReceiveString( ((int)socket) );
+		if(res != 0)
+			printf("Response received '%s'!\n", res);
+		else
+			recibir = false;
+	}
+
+	return 0;
 }
 
 void Client(char* texto)
@@ -45,17 +75,20 @@ void Client(char* texto)
 	int sock = SocketClient_ConnectToServer("8086");
 	printf("Socket asignado %d\n", sock);
 	int m;
-	//char* asd = (char*)malloc(1);
+	pthread_t threadRecv;
 	while(1)
 	{
+		if(!recibir)
+			break;
+
 		printf("WHILE\n");
 		m = SocketCommons_SendMessageString(sock, texto);
 		printf("String enviado. Retorno %d\n", m);
-		//int st = recv(sock, asd, 0, MSG_WAITALL);
-		//free(asd);
-		//printf("RECV = %d\n", st);
-		//if(st == 0)
-			//break;
+
+		ThreadManager_CreateThread(&threadRecv, ClientManageReceptions, ((void*) sock) );
+		printf("Awaiting response...\n");
+		pthread_join(threadRecv, NULL);
+
 		sleep(1);
 	}
 }
