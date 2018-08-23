@@ -7,6 +7,7 @@
 #include "kemmens/logger.h"
 #include "kemmens/SocketMessageTypes.h"
 #include "kemmens/SocketCommons.h"
+#include "kemmens/CommandInterpreter.h"
 #include <unistd.h>
 
 bool recibir = true;
@@ -118,6 +119,20 @@ void* ClientServer(void* port)
 
 int main(int argc, char **argv)
 {
+
+	CommandRunnerStructure* inter = (CommandRunnerStructure*)malloc(sizeof(CommandRunnerStructure));
+
+	inter->test = 4;
+	inter->command = malloc(4);
+
+	memcpy(inter->command, "hola", 3);
+
+	printf("%s\n", inter->command);
+
+	free(inter->command);
+	free(inter);
+
+	return 0;
 	Logger_CreateLog("./chatapp.log", "CHARAPP", true);
 
 	if(argc < 2)

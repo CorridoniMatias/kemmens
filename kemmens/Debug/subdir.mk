@@ -4,6 +4,7 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
+../CommandInterpreter.c \
 ../SocketClient.c \
 ../SocketCommons.c \
 ../SocketServer.c \
@@ -13,6 +14,7 @@ C_SRCS += \
 ../megekemmen.c 
 
 OBJS += \
+./CommandInterpreter.o \
 ./SocketClient.o \
 ./SocketCommons.o \
 ./SocketServer.o \
@@ -22,6 +24,7 @@ OBJS += \
 ./megekemmen.o 
 
 C_DEPS += \
+./CommandInterpreter.d \
 ./SocketClient.d \
 ./SocketCommons.d \
 ./SocketServer.d \
