@@ -49,16 +49,38 @@ bool CommandInterpreter_Do(char* command, char* separator, void* extraData)
 
 	char** cmd = string_split(command, separator);
 
+	int argCo = 0;
+
+	while (cmd[argCo] != NULL) {
+		argCo++;
+	}
+
+	argCo--; //Sacamos 1 porque el primer arg es el comando en si y esta variable va a decir cuantos parametros hay.
+
 	for(int i = 0; i < size; i++)
 	{
 		inter = (CommandRunnerStructure*)list_get(interpreters, i);
 
 		if(strcmp(command, inter->command) == 0)
 		{
-			inter->runner();
+			inter->runner(argCo, cmd, extraData);
 
 			return true;
 		}
 	}
+
+	CommandInterpreter_FreeArguments(cmd); //Si ninguna de las funciones registradas va a usar el comando tenemos que liberar nosotros el recurso.
+
+	return false;
+}
+
+void CommandInterpreter_FreeArguments(char** args)
+{
+	int i = 0;
+	while (args[i] != NULL) {
+		free(args[i]);
+		i++;
+	}
+	free(args);
 }
 

@@ -120,17 +120,30 @@ void* ClientServer(void* port)
 int main(int argc, char **argv)
 {
 
-	CommandRunnerStructure* inter = (CommandRunnerStructure*)malloc(sizeof(CommandRunnerStructure));
+	char** cmd = string_split("print hello world", " ");
 
-	inter->test = 4;
-	inter->command = malloc(4);
+	int argCo = 0;
+	int i = 0;
+	while (cmd[i] != NULL) {
+		argCo++;
+		i++;
+	}
+	argCo--;
 
-	memcpy(inter->command, "hola", 3);
+	/*if(--argCo > 0)
+	{
+		free(*cmd);
+		cmd++;
+	}*/
 
-	printf("%s\n", inter->command);
+	for(int o = 1; o <= argCo;o++) {
+		printf("Arg %d de %d args: '%s'\n", o,argCo, cmd[o]);
+		free(cmd[o]);
+	}
 
-	free(inter->command);
-	free(inter);
+	free(cmd);
+
+	printf("Hay %d args\n", argCo);
 
 	return 0;
 	Logger_CreateLog("./chatapp.log", "CHARAPP", true);
