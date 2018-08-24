@@ -1,12 +1,20 @@
 #include "kemmens/CommandInterpreter.h"
 
+t_list* interpreters = NULL;
+
 static CommandRunnerStructure* CreateStructure()
 {
 	return (CommandRunnerStructure*)malloc(sizeof(CommandRunnerStructure));
 }
 
-void CommandInterpreter_RegisterCommand(char* command, void (*runner)(int argC, char** args, void* extraData))
+void CommandInterpreter_RegisterCommand(char* command, void (*runner)(int argC, char** args,char* callingLine, void* extraData))
 {
+	if(interpreters == NULL)
+	{
+		Logger_Log(LOG_ERROR, "KEMMENSLIB - CommandInterpreter::CommandInterpreter_Do -> No se llamo al metodo CommandInterpreter_Init(...)!!");
+		return;
+	}
+
 	CommandRunnerStructure* inter = CreateStructure();
 
 	int len = string_length(command) + 1;
@@ -14,15 +22,23 @@ void CommandInterpreter_RegisterCommand(char* command, void (*runner)(int argC, 
 	memcpy(inter->command, command, len);
 
 	inter->runner = runner;
+	list_add(interpreters, inter);
 }
 
-void CommandInterpreter_InitInterpreter()
+void CommandInterpreter_Init()
 {
-	interpreters = list_create();
+	if(interpreters == 0)
+		interpreters = list_create();
 }
 
 bool CommandInterpreter_DeRegisterCommand(char* command)
 {
+	if(interpreters == NULL)
+	{
+		Logger_Log(LOG_ERROR, "KEMMENSLIB - CommandInterpreter::CommandInterpreter_Do -> No se llamo al metodo CommandInterpreter_Init(...)!!");
+		return false;
+	}
+
 	CommandRunnerStructure* inter;
 	int size = list_size(interpreters);
 	for(int i = 0; i < size; i++)
@@ -44,6 +60,15 @@ bool CommandInterpreter_DeRegisterCommand(char* command)
 
 bool CommandInterpreter_Do(char* command, char* separator, void* extraData)
 {
+	if(interpreters == NULL)
+	{
+		Logger_Log(LOG_ERROR, "KEMMENSLIB - CommandInterpreter::CommandInterpreter_Do -> No se llamo al metodo CommandInterpreter_Init(...)!!");
+		return false;
+	}
+
+	if(string_length(command) == 0)
+		return false;
+
 	CommandRunnerStructure* inter;
 	int size = list_size(interpreters);
 
@@ -55,19 +80,18 @@ bool CommandInterpreter_Do(char* command, char* separator, void* extraData)
 		argCo++;
 	}
 
-	argCo--; //Sacamos 1 porque el primer arg es el comando en si y esta variable va a decir cuantos parametros hay.
-
-	for(int i = 0; i < size; i++)
-	{
-		inter = (CommandRunnerStructure*)list_get(interpreters, i);
-
-		if(strcmp(command, inter->command) == 0)
+	if(argCo > 0) // si tenemos al menos el comando
+		for(int i = 0; i < size; i++)
 		{
-			inter->runner(argCo, cmd, extraData);
+			inter = (CommandRunnerStructure*)list_get(interpreters, i);
 
-			return true;
+			if(strcmp(cmd[0], inter->command) == 0)
+			{
+				inter->runner(--argCo, cmd, command, extraData);//Sacamos 1 porque el primer arg es el comando en si y esta variable va a decir cuantos parametros hay.
+
+				return true;
+			}
 		}
-	}
 
 	CommandInterpreter_FreeArguments(cmd); //Si ninguna de las funciones registradas va a usar el comando tenemos que liberar nosotros el recurso.
 
@@ -82,5 +106,23 @@ void CommandInterpreter_FreeArguments(char** args)
 		i++;
 	}
 	free(args);
+}
+
+void CommandInterpreter_Destroy()
+{
+	if(interpreters == NULL)
+		return;
+
+	void deregistercommands(void* cmd)
+	{
+		CommandRunnerStructure* com = (CommandRunnerStructure*)cmd;
+
+		Logger_Log(LOG_INFO, "KEMMENSLIB - CommandInterpreter::CommandInterpreter_Destroy -> Eliminando comando '%s'", com->command);
+
+		free(com->command);
+	}
+
+	list_iterate(interpreters, deregistercommands);
+	list_destroy_and_destroy_elements(interpreters, (void*)free);
 }
 

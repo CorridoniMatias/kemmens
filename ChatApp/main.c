@@ -17,37 +17,65 @@ void cleanup()
 	//Aca se podria hacer un cleanup custom
 }
 
-void onPacketArrived(int socketID, int message_type, void* data)
-{
-	if(message_type == MESSAGETYPE_STRING)
-	{
-		printf("STRING RECIBIDO: %s\n", ((char*)data) );
-		SocketCommons_SendMessageString(socketID, "Recibido!");
-	}
-
-	free(data);
-}
-
 void exitok()
 {
 	exit_gracefully_custom(cleanup, EXIT_SUCCESS);
 }
 
+void onPacketArrived(int socketID, int message_type, void* data)
+{
+	bool esComando = false;
+	if(message_type == MESSAGETYPE_STRING)
+	{
+		printf("STRING RECIBIDO: %s\n", ((char*)data) );
+		esComando = CommandInterpreter_Do((char*)data, " ", (void*)socketID);
+
+		if(!esComando)
+			SocketCommons_SendMessageString(socketID, "Recibido!");
+	}
+
+	free(data);
+}
+
 void processLineInput(char* line)
 {
 	printf("Comando: %s\n", line);
-	if(strcmp(line, "stop") == 0)
-	{
-		free(line);
-		SocketServer_Stop();
-		return;
-	}
+
+	CommandInterpreter_Do(line, " ", NULL);
 
 	free(line);
 }
 
+void *CommandDouble (int argC, char** args, char* callingLine, void* extraData)
+{
+	if(argC == 1)
+	{
+		char* format = (char*)malloc(2);
+		snprintf(format, 2, "%d", atoi(args[1])*2);
+
+		SocketCommons_SendMessageString((int)extraData, format);
+		free(format);
+	}
+	CommandInterpreter_FreeArguments(args);
+	return 0;
+}
+
+void *CommandStopServer (int argC, char** args, char* callingLine, void* extraData)
+{
+
+	SocketServer_Stop();
+
+	CommandInterpreter_FreeArguments(args);
+	return 0;
+}
+
 void* Server()
 {
+	CommandInterpreter_Init();
+
+	CommandInterpreter_RegisterCommand("stop", (void*)CommandStopServer);
+	CommandInterpreter_RegisterCommand("double", (void*)CommandDouble);
+
 	SocketServer_Start("CHAT", 8086);
 	SocketServer_ListenForConnection(onPacketArrived, processLineInput);
 	printf("SERVER SHUTDOWN\n");
@@ -117,35 +145,68 @@ void* ClientServer(void* port)
 	return NULL;
 }
 
-int main(int argc, char **argv)
+void *CommandPrintF (int argC, char** args, char* callingLine, void* extraData)
 {
 
-	char** cmd = string_split("print hello world", " ");
+	printf("Hola! Soy el handler de printf, me llego el comando '%s'\n", args[0]);
 
-	int argCo = 0;
-	int i = 0;
-	while (cmd[i] != NULL) {
-		argCo++;
-		i++;
-	}
-	argCo--;
-
-	/*if(--argCo > 0)
+	for(int i = 1; i <= argC; i++)
 	{
-		free(*cmd);
-		cmd++;
-	}*/
-
-	for(int o = 1; o <= argCo;o++) {
-		printf("Arg %d de %d args: '%s'\n", o,argCo, cmd[o]);
-		free(cmd[o]);
+		printf("Argumento %d: %s\n", i, args[i]);
 	}
 
-	free(cmd);
+	if(extraData != NULL)
+		printf("Extra data: %s\n", (char*)extraData); //Ya sabia que era un char* por eso puedo castear alegremente.
 
-	printf("Hay %d args\n", argCo);
-
+	CommandInterpreter_FreeArguments(args);
 	return 0;
+}
+
+void *CommandSum (int argC, char** args, char* callingLine, void* extraData)
+{
+
+	if(argC == 2)
+	{
+		int n1 = atoi(args[1]);
+		int n2 = atoi(args[2]);
+
+		printf("%d + %d = %d\n", n1, n2, n1+n2);
+	}
+
+	CommandInterpreter_FreeArguments(args);
+	return 0;
+}
+
+void ProbarCommandInterpreter()
+{
+	Logger_CreateLog("./chatapp.log", "CHARAPP", true);
+
+	CommandInterpreter_Init();
+
+	CommandInterpreter_RegisterCommand("printf", (void*)CommandPrintF);
+	CommandInterpreter_RegisterCommand("sum", (void*)CommandSum);
+
+	int res;
+
+	res = CommandInterpreter_Do("printf hola mundo!", " ", "Esto es cualquier info extra y podria ser hasta un struct!");
+
+	printf("Resultado de comando 'printf' - registrado = %d.\n", res);
+
+	res = CommandInterpreter_Do("alguncomando no registrado", " ", NULL);
+
+	printf("Resultado de comando 'alguncomando' - registrado = %d.\n", res);
+
+	CommandInterpreter_Do("sum 1 2", " ", NULL);
+
+	//CommandInterpreter_Destroy(); No hace falta llamar a esto si usamos el exit_gracefully() de megekemmen.h
+
+	exitok();
+}
+
+int main(int argc, char **argv)
+{
+	//ProbarCommandInterpreter();
+
 	Logger_CreateLog("./chatapp.log", "CHARAPP", true);
 
 	if(argc < 2)
@@ -184,6 +245,8 @@ int main(int argc, char **argv)
 			printf("JOINED BOTH\n");
 		}
 	}
+
+	//Logger_DestroyLog(); No hace falta llamar a esto si usamos el exit_gracefully() de megekemmen.h
 
 	exitok();
 }
