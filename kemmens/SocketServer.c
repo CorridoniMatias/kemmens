@@ -47,7 +47,7 @@ void SocketServer_Start(char name[5], int port)
 	}
 }
 
-void SocketServer_ListenForConnection(void (*onPacketArrived)(int socketID, int messageType, void* actualData), void (*consoleInputHandle)(char* line))
+void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 {
 	if(sock < 0)
 		return;
@@ -65,8 +65,8 @@ void SocketServer_ListenForConnection(void (*onPacketArrived)(int socketID, int 
 	int connlistsize, currconn, connected_socket, sel, max_fd = sock; //el descriptor maximo empieza como sock (el master y unico que hay por ahora) pero puede ser mas grande a medida que lleguen sockets.
 
 	//Si recibimos una funcion para manejar el procesamiento del input por linea se lo pasamos a readline.
-	if(consoleInputHandle != NULL)
-		rl_callback_handler_install("> ", (rl_vcpfunc_t*) consoleInputHandle);
+	if(actions.OnConsoleInputReceived != 0)
+		rl_callback_handler_install("> ", (rl_vcpfunc_t*) actions.OnConsoleInputReceived);
 
 
 	while(1)
@@ -119,6 +119,9 @@ void SocketServer_ListenForConnection(void (*onPacketArrived)(int socketID, int 
 			memcpy(temp, &connected_socket, sizeof(int));
 			list_add(connections, temp);
 
+			if(actions.OnClientConnected != NULL)
+				actions.OnClientConnected(connected_socket);
+
 			if(max_fd < connected_socket)
 				max_fd = connected_socket; //hay que actualizar el maximo valor por el cual va a escuchar el select, sino nunca va a escuchar el nuevo socket!
 		}
@@ -134,17 +137,31 @@ void SocketServer_ListenForConnection(void (*onPacketArrived)(int socketID, int 
 				{
 					//NOS LLEGA UN MENSAJE DE UN CLIENTE!
 					int message_type = -1;
+					int error_code = -1;
 					void* data;
-					data = SocketCommons_ReceiveData(currconn, &message_type);
 
-					if(data == 0) //Hubo un error al recibir o recv devolvio 0 o sea nos cerraron el socket.
+					data = SocketCommons_ReceiveData(currconn, &message_type, &error_code);
+
+					if(data == 0) //recv devolvio 0 o sea nos cerraron el socket.
 					{
-						free(list_remove(connections, i));
+						if(error_code == 0)
+						{
+							free(list_remove(connections, i));
+
+							if(actions.OnClientDisconnect != NULL)
+									actions.OnClientDisconnect(currconn);
+						} else
+						{
+							if(actions.OnReceiveError != NULL)
+								actions.OnReceiveError(currconn, error_code); //error_code contiene el errno devuelto por el S.O, en el Log (si es que se inicializo) esta pasado a string, y tambien se puede obtener con strerror()
+						}
 					} else
 					{
 						//OJO! Se debe hacer free(data) en la funcion que atienda la llegada del paquete.
-						onPacketArrived(currconn,  message_type, data);
+						if(actions.OnPacketArrived != NULL)
+								actions.OnPacketArrived(currconn,  message_type, data);
 					}
+
 					break;
 				}
 
@@ -155,15 +172,15 @@ void SocketServer_ListenForConnection(void (*onPacketArrived)(int socketID, int 
 				}
 			}
 
-			if((currconn == -1 || connlistsize == 0) && consoleInputHandle != NULL) //Input de teclado
-				rl_callback_read_char(); //Readline nos hace el favor de ir acumulando los chars hasta recibir <enter>, ahi le manda la linea a consoleInputHandle.
+			if((currconn == -1 || connlistsize == 0) && actions.OnConsoleInputReceived != NULL) //Input de teclado
+					rl_callback_read_char(); //Readline nos hace el favor de ir acumulando los chars hasta recibir <enter>, ahi le manda la linea a consoleInputHandle.
 		}
 		if(closeAll == 1)
 			break;
 	}
 
 	FD_ZERO(&descriptores_clientes);
-	if(consoleInputHandle != NULL)
+	if(actions.OnConsoleInputReceived != NULL)
 		rl_callback_handler_remove(); //Deregistrar el callback de readline.
 
 	SocketServer_TerminateAllConnections();

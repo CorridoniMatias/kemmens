@@ -2,6 +2,7 @@
 #define SOCKETCOMMONS_H_
 
 #include "commons/string.h"
+#include <string.h>
 #include "logger.h"
 #include "SocketMessageTypes.h"
 #include <stdlib.h> // Para malloc
@@ -23,7 +24,7 @@ int SocketCommons_SendMessageString(int socket, char* message);
  *
  *	retorna el socket propiamente dicho, en caso de error devuelve 0 (NULL). El free de la struct se hace solo en caso de NULL, sino hay que hacer el free.
  */
-ContentHeader* SocketCommons_ReceiveHeader(int socket);
+ContentHeader* SocketCommons_ReceiveHeader(int socket, int* error_status);
 
 /*	Envia el header de datos, length es el tamaño de datos que va a recibir la otra parte, message_type es el tipo de mensaje a enviar (ver tipos en SocketMessageTypes.h)
  *
@@ -31,31 +32,13 @@ ContentHeader* SocketCommons_ReceiveHeader(int socket);
  */
 int SocketCommons_SendHeader(int socket, int length, int message_type);
 
-/* Envia el header al socket, el length es el tamaño del mensaje que se enviara posterior al header.
- *
- *	retorna el estado del send;
- */
-int SocketCommons_GetMessageLength(int socket);
-
-/* Obtiene el length del body que se recibira.
- *
- *	retorna el length, -1 si hubo error.
- */
-int SocketCommons_GetMessageLength(int socket);
-
 /* Crea la estructura del header, se tiene que hacer free despues de usar.
  *
  *	retorna puntero a header.
  */
 ContentHeader* SocketCommons_CreateHeader();
 
-/* Recibe un string por el socket indicado. El tamaño lo toma automaticamenta llamando a ReceiveHeader() primero.
- *
- *	retorna el string. HACER FREE DESPUES DE USAR.
- */
-char* SocketCommons_ReceiveString(int socket);
-
-/* Recibe un string por el socket indicado. El tamaño se debe pasar por parametro.
+/* Recibe un string por el socket indicado. El tamaño se debe pasar por parametro. No se deberia usar, ver SocketCommons_ReceiveData(...)
  *
  *	retorna el string. HACER FREE DESPUES DE USAR.
  */
@@ -66,7 +49,7 @@ char* SocketCommons_ReceiveStringWithLength(int socket, int length);
  *
  *		retorna los datos recibidos. Hacer free del buffer despues de usar. Ojo de no hacer free si devuelve NULL.
  */
-void* SocketCommons_ReceiveData(int socket, int* message_type);
+void* SocketCommons_ReceiveData(int socket, int* message_type, int* error_status);
 
 
 /*		Envia datos por el socket indicado. El tipo puesto en message_type debe ser un tipo conocido y definido en SocketMessageTypes.h, data contiene los datos a ser enviado y dataLength es el largo de lo contenido en la variable data.

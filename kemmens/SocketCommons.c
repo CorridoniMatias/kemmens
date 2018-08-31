@@ -1,4 +1,5 @@
 #include "kemmens/SocketCommons.h"
+#include <errno.h>
 #include "stdio.h"
 
 ContentHeader* SocketCommons_CreateHeader()
@@ -12,7 +13,7 @@ int SocketCommons_SendMessageString(int socket, char* message)
 	return SocketCommons_SendData(socket, MESSAGETYPE_STRING, message, leng);
 }
 
-ContentHeader* SocketCommons_ReceiveHeader(int socket)
+ContentHeader* SocketCommons_ReceiveHeader(int socket, int* error_status)
 {
 	//Creamos el header que nos va a dar el lengh del tamaño de lo que sea que vamos a recibir posteriormente en el "body"
 	ContentHeader * header = SocketCommons_CreateHeader();
@@ -21,26 +22,24 @@ ContentHeader* SocketCommons_ReceiveHeader(int socket)
 
 	if(ret < 1)
 	{
-		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveHeader - Error al recibir header, codigo: %d", ret);
+		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveHeader - Error al recibir header, return recv: %d", ret);
 		free(header);
-		return 0;
+
+		if(error_status != 0)
+		{
+			if(ret < 0)
+			{
+				*error_status = errno;
+				Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveHeader - Error al recibir header, errno = %d = '%s'", *error_status, strerror(*error_status));
+			}
+			else
+				*error_status = 0;//En general SIEMPRE lo primero que recibimos es el header, por ende aca es donde detectamos si el cliente se desconecto.
+		}
+
+		return NULL;
 	}
 
 	return header;
-}
-
-int SocketCommons_GetMessageLength(int socket)
-{
-	ContentHeader * header = SocketCommons_ReceiveHeader(socket);
-
-	if(header == 0)
-		return -1;
-
-	int length = header->body_length;
-
-	free(header);
-
-	return length;
 }
 
 int SocketCommons_SendHeader(int socket, int length, int message_type)
@@ -56,13 +55,6 @@ int SocketCommons_SendHeader(int socket, int length, int message_type)
 	free(header);
 
 	return status;
-}
-
-char* SocketCommons_ReceiveString(int socket)
-{
-	int length = SocketCommons_GetMessageLength(socket);
-
-	return SocketCommons_ReceiveStringWithLength(socket, length);
 }
 
 char* SocketCommons_ReceiveStringWithLength(int socket, int length)
@@ -83,12 +75,18 @@ char* SocketCommons_ReceiveStringWithLength(int socket, int length)
 	return str;
 }
 
-void* SocketCommons_ReceiveData(int socket, int* message_type)
+void* SocketCommons_ReceiveData(int socket, int* message_type, int* error_status)
 {
-	ContentHeader* header = SocketCommons_ReceiveHeader(socket);
+	if(message_type == NULL)
+	{
+		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - se recibio NULL en el parametro int* message_type. Se esperaba una direccion de memoria valida.");
+		return NULL;
+	}
+
+	ContentHeader* header = SocketCommons_ReceiveHeader(socket, error_status);
 
 	if(header == 0)
-		return 0;
+		return header;
 
 	int len = header->body_length;
 	//Informamos al usuario de la funcion que es lo que vamos a recibir para que despues puedan castear nuestro void*

@@ -69,6 +69,23 @@ void *CommandStopServer (int argC, char** args, char* callingLine, void* extraDa
 	return 0;
 }
 
+
+void ClientConnected(int socket)
+{
+	printf("Cliente se conecto! %d\n", socket);
+}
+
+void ClientDisconnected(int socket)
+{
+	printf("Cliente se fue! %d\n", socket);
+}
+
+void ClientError(int socketID, int errorCode)
+{
+	printf("Cliente %d se reporto con error %s!\n", socketID, strerror(errorCode));
+}
+
+
 void* Server()
 {
 	CommandInterpreter_Init();
@@ -77,7 +94,15 @@ void* Server()
 	CommandInterpreter_RegisterCommand("double", (void*)CommandDouble);
 
 	SocketServer_Start("CHAT", 8086);
-	SocketServer_ListenForConnection(onPacketArrived, processLineInput);
+	SocketServer_ActionsListeners actions = INIT_ACTION_LISTENER;
+
+	actions.OnConsoleInputReceived = (void*)processLineInput;
+	actions.OnPacketArrived = (void*)onPacketArrived;
+	actions.OnClientConnected = (void*)ClientConnected;
+	actions.OnClientDisconnect = (void*)ClientDisconnected;
+	actions.OnReceiveError = (void*)ClientError;
+
+	SocketServer_ListenForConnection(actions);
 	printf("SERVER SHUTDOWN\n");
 	//SocketServer_ListenForConnection(logger, 0);
 	return NULL;
@@ -86,11 +111,12 @@ void* Server()
 void* ClientManageReceptions(void* socket)
 {
 	char* res;
+	int te, err;
 	//while(1)
 	{
-		res = SocketCommons_ReceiveString( ((int)socket) );
+		res = SocketCommons_ReceiveData( ((int)socket) , &te, &err);
 		if(res != 0)
-			printf("Response received '%s'!\n", res);
+			printf("Response received type %d '%s'!\n", te, (char*)res);
 		else
 			recibir = false;
 	}

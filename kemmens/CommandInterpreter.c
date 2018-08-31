@@ -87,7 +87,8 @@ bool CommandInterpreter_Do(char* command, char* separator, void* extraData)
 
 			if(strcmp(cmd[0], inter->command) == 0)
 			{
-				inter->runner(--argCo, cmd, command, extraData);//Sacamos 1 porque el primer arg es el comando en si y esta variable va a decir cuantos parametros hay.
+				if(inter->runner != NULL)
+					inter->runner(--argCo, cmd, command, extraData);//Sacamos 1 porque el primer arg es el comando en si y esta variable va a decir cuantos parametros hay.
 
 				return true;
 			}
