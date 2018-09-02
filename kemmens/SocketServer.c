@@ -203,6 +203,16 @@ void SocketServer_TerminateAllConnections()
 	close(sock);
 }
 
+bool SocketServer_IsClientConnected(int socket)
+{
+	bool connected(void* client)
+	{
+		return *((int*)client) == socket;
+	}
+
+	return list_any_satisfy(connections, connected);
+}
+
 void SocketServer_Stop()
 {
 	closeAll = 1;

@@ -29,5 +29,12 @@ void SocketServer_Start(char name[5], int port);
 void SocketServer_Stop();
 t_list* SocketServer_GetConnectedClients();
 
+/*
+ * 		Comprueba si un socket todavia esta conectado como cliente.
+ *
+ * 		ES FUNDAMENTAL CHECKEAR ESTO ANTES DE HACER UN SEND!
+ */
+bool SocketServer_IsClientConnected(int socket);
+
 
 #endif

@@ -47,7 +47,7 @@ int SocketCommons_SendHeader(int socket, int length, int message_type)
 	ContentHeader * header = SocketCommons_CreateHeader();
 	header->body_length = length;
 	header->message_type = message_type;
-	int status = send(socket, header, sizeof(ContentHeader), MSG_WAITALL);
+	int status = send(socket, header, sizeof(ContentHeader), MSG_WAITALL | MSG_NOSIGNAL);
 
 	if(status < 0)
 		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_SendHeader - Error al enviar header, codigo: %d", status);
@@ -122,7 +122,7 @@ int SocketCommons_SendData(int socket, int message_type, void* data, int dataLen
 	if(status < 0)
 		return -2;
 
-	status = send(socket, data, dataLength, MSG_WAITALL);
+	status = send(socket, data, dataLength, MSG_WAITALL | MSG_NOSIGNAL);
 
 	if(status < 0)
 		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_SendData - Error al enviar data, codigo: %d", status);

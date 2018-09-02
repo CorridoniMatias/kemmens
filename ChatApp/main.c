@@ -52,9 +52,15 @@ void *CommandDouble (int argC, char** args, char* callingLine, void* extraData)
 	if(argC == 1)
 	{
 		char* format = (char*)malloc(2);
-		snprintf(format, 2, "%d", atoi(args[1])*2);
+		int intval = atoi(args[1]);
+		if(intval == 2)
+			sleep(10);
 
-		SocketCommons_SendMessageString((int)extraData, format);
+		snprintf(format, 2, "%d", intval*2);
+
+		if(SocketServer_IsClientConnected((int)extraData))
+			SocketCommons_SendMessageString((int)extraData, format);
+
 		free(format);
 	}
 	CommandInterpreter_FreeArguments(args);
@@ -252,13 +258,13 @@ void ThreadPoolFunc()
 {
 	Logger_CreateLog("./chatapp.log", "CHARAPP", true);
 
-	ThreadPool* pool = ThreadPool_CreatePool(5, false);
+	ThreadPool* pool = ThreadPool_CreatePool(10, false);
 
 	ThreadPoolRunnable* run;
 
-	for(int i = 0; i < 20; i++)
+	for(int i = 0; i < 100; i++)
 	{
-		run = (ThreadPoolRunnable*)malloc(sizeof(ThreadPoolRunnable));
+		run = ThreadPool_CreateRunnable();
 		run->data = (void*)i;
 		if(i%2 == 0)
 			run->runnable = (void*)CountTo;
@@ -267,6 +273,11 @@ void ThreadPoolFunc()
 		ThreadPool_AddJob(pool, run);
 	}
 
+	//getchar();
+	/*sleep(5);
+	ThreadPool_ExitWhenPossibleAsync(pool);
+	sleep(15);*/
+	ThreadPool_FreeGracefully(pool);
 
 	getchar();
 	exitok();
@@ -275,7 +286,7 @@ void ThreadPoolFunc()
 int main(int argc, char **argv)
 {
 	//ProbarCommandInterpreter();
-	ThreadPoolFunc();
+	//ThreadPoolFunc();
 
 	Logger_CreateLog("./chatapp.log", "CHARAPP", true);
 

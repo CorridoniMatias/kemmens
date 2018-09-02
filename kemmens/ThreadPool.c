@@ -3,35 +3,44 @@
 static void* ThreadPool_BasicOperation(void* ownerPool)
 {
 	ThreadPool* owner = (ThreadPool*)ownerPool;
+	pthread_t this = pthread_self();
 
-	Logger_Log(LOG_DEBUG, "Thread Registering");
+	Logger_Log(LOG_DEBUG, "Thread %p Registering", &this);
 
 	while(!owner->terminate_all)
 	{
 		pthread_mutex_lock(&owner->lock);
 
-		owner->free_threads++;
-
 		if(queue_size(owner->jobs) == 0)
 			pthread_cond_wait(&owner->cond, &owner->lock);
+
+		if(owner->terminate_all)
+		{
+			pthread_mutex_unlock(&owner->lock);
+			break;
+		}
 
 		if(queue_size(owner->jobs) > 0)
 		{
 			ThreadPoolRunnable* run = queue_pop(owner->jobs);
 			owner->free_threads--;
-			Logger_Log(LOG_DEBUG, "Working on job... Pool job queue count: %d. Free threads: %d", queue_size(owner->jobs), owner->free_threads);
+			Logger_Log(LOG_DEBUG, "Thread %p orking on job... Pool job queue count: %d. Free threads: %d", &this, queue_size(owner->jobs), owner->free_threads);
 			pthread_mutex_unlock(&owner->lock);
 
 			run->runnable(run->data); //adentro de runnable se tiene que liberar la data! Responsabilidad del usuario!
 
 			free(run);
-			Logger_Log(LOG_DEBUG, "Thread Finished, free threads: %d", owner->free_threads+1);
+			pthread_mutex_lock(&owner->lock);
+			owner->free_threads++;
+			pthread_mutex_unlock(&owner->lock);
+
+			Logger_Log(LOG_DEBUG, "Thread %p Finished, free threads: %d", &this, owner->free_threads+1);
 			continue;
 		}
 
 		pthread_mutex_unlock(&owner->lock);
 	}
-
+	Logger_Log(LOG_DEBUG, "Thread %p EXITING!", &this);
 	pthread_exit(0);
 	return 0;
 }
@@ -56,8 +65,8 @@ ThreadPool* ThreadPool_CreatePool(int threadAmount, bool detached)
 {
 	ThreadPool* tp = (ThreadPool*)malloc(sizeof(ThreadPool));
 
-	tp->free_threads = 0;
-	tp->jobs_available = false;
+	tp->free_threads = threadAmount;
+	tp->detached = detached;
 	tp->terminate_all = false;
 	pthread_mutex_init(&(tp->lock), NULL);
 	pthread_cond_init(&tp->cond, NULL);
@@ -69,14 +78,95 @@ ThreadPool* ThreadPool_CreatePool(int threadAmount, bool detached)
 	return tp;
 }
 
+ThreadPoolRunnable* ThreadPool_CreateRunnable()
+{
+	ThreadPoolRunnable* run = (ThreadPoolRunnable*)malloc(sizeof(ThreadPoolRunnable));
+
+	run->data = NULL;
+	run->runnable = NULL;
+	run->should_free_data = false;
+
+	return run;
+}
+
 void ThreadPool_AddJob(ThreadPool* pool, ThreadPoolRunnable* job)
 {
 	pthread_mutex_lock(&pool->lock);
 
-	Logger_Log(LOG_DEBUG, "Adding job... Pool job queue count: %d", queue_size(pool->jobs));
+	if(!pool->terminate_all)
+	{
+		Logger_Log(LOG_DEBUG, "Adding job... Pool job queue count: %d", queue_size(pool->jobs));
 
-	queue_push(pool->jobs, job);
+		queue_push(pool->jobs, job);
 
+		pthread_cond_broadcast(&pool->cond);
+	}
+
+	pthread_mutex_unlock(&pool->lock);
+}
+
+void ThreadPool_ExitWhenPossibleAsync(ThreadPool* pool)
+{
+	pthread_mutex_lock(&pool->lock);
+	pool->terminate_all = true;
 	pthread_cond_broadcast(&pool->cond);
 	pthread_mutex_unlock(&pool->lock);
 }
+
+void ThreadPool_ExitWhenPossibleWait(ThreadPool* pool)
+{
+	ThreadPool_ExitWhenPossibleAsync(pool);
+
+	ThreadPool_JoinAllThreads(pool);
+}
+
+static void ThreadPool_RemoveAllThreads(ThreadPool* pool)
+{
+	ThreadPool_ExitWhenPossibleWait(pool);
+
+	list_destroy_and_destroy_elements(pool->threads, (void*)free);
+}
+
+void ThreadPool_FreeGracefully(ThreadPool* pool)
+{
+	ThreadPool_RemoveAllThreads(pool);
+	ThreadPool_ClearPendingJobs(pool);
+	queue_destroy(pool->jobs);
+	free(pool);
+}
+
+void ThreadPool_JoinAllThreads(ThreadPool* pool)
+{
+	void joinAll(void* thread)
+	{
+		Logger_Log(LOG_INFO, "KEMMENSLIB::ThreadPool->ThreadPool_ExitWhenPossibleWait - Joining thread %p...", thread);
+		pthread_join( *((pthread_t*)thread), NULL );
+	}
+
+	if(!pool->detached)
+		list_iterate(pool->threads, joinAll);
+}
+
+void ThreadPool_ClearPendingJobs(ThreadPool* pool)
+{
+	void destroyJob(void* job)
+	{
+		ThreadPoolRunnable* actual = (ThreadPoolRunnable*)job;
+
+		if(actual->should_free_data && actual->data != NULL)
+			free(actual->data); //SI el thread que esta corriendo esto actualmente es detached y le liberamos la memoria que esta usando puede causar un seg. fault!
+
+		if(actual)
+			free(actual);
+
+		Logger_Log(LOG_INFO, "KEMMENSLIB::ThreadPool->ThreadPool_ClearPendingJobs - Removed job %p", job);
+	}
+
+	pthread_mutex_lock(&pool->lock);
+	queue_clean_and_destroy_elements(pool->jobs, destroyJob);
+
+	pthread_mutex_unlock(&pool->lock);
+}
+
+
+
