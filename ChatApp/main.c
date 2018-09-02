@@ -8,6 +8,7 @@
 #include "kemmens/SocketMessageTypes.h"
 #include "kemmens/SocketCommons.h"
 #include "kemmens/CommandInterpreter.h"
+#include "kemmens/ThreadPool.h"
 #include <unistd.h>
 
 bool recibir = true;
@@ -229,9 +230,52 @@ void ProbarCommandInterpreter()
 	exitok();
 }
 
+void* CountTo(void* args)
+{
+	for(int i = 0; i < 5; i++)
+	{
+		//printf("%d: %d\n", (int)args, i);
+		sleep(1);
+	}
+
+	return 0;
+}
+
+void* SleepFor(void* args)
+{
+	sleep(10);
+
+	return 0;
+}
+
+void ThreadPoolFunc()
+{
+	Logger_CreateLog("./chatapp.log", "CHARAPP", true);
+
+	ThreadPool* pool = ThreadPool_CreatePool(5, false);
+
+	ThreadPoolRunnable* run;
+
+	for(int i = 0; i < 20; i++)
+	{
+		run = (ThreadPoolRunnable*)malloc(sizeof(ThreadPoolRunnable));
+		run->data = (void*)i;
+		if(i%2 == 0)
+			run->runnable = (void*)CountTo;
+		else
+			run->runnable = (void*)SleepFor;
+		ThreadPool_AddJob(pool, run);
+	}
+
+
+	getchar();
+	exitok();
+}
+
 int main(int argc, char **argv)
 {
 	//ProbarCommandInterpreter();
+	ThreadPoolFunc();
 
 	Logger_CreateLog("./chatapp.log", "CHARAPP", true);
 
