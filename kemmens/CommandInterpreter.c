@@ -7,6 +7,18 @@ static CommandRunnerStructure* CreateStructure()
 	return (CommandRunnerStructure*)malloc(sizeof(CommandRunnerStructure));
 }
 
+ThreadableDoStructure* CommandInterpreter_MallocThreadableStructure()
+{
+	ThreadableDoStructure* st = (ThreadableDoStructure*)malloc(sizeof(ThreadableDoStructure));
+
+	st->commandline = NULL;
+	st->data = NULL;
+	st->separator = NULL;
+	st->postDo = NULL;
+
+	return st;
+}
+
 void CommandInterpreter_RegisterCommand(char* command, void (*runner)(int argC, char** args,char* callingLine, void* extraData))
 {
 	if(interpreters == NULL)
@@ -56,6 +68,28 @@ bool CommandInterpreter_DeRegisterCommand(char* command)
 	}
 
 	return false;
+}
+
+void* CommandInterpreter_DoThreaded(void* arg)
+{
+	ThreadableDoStructure* args = (ThreadableDoStructure*)arg;
+
+	bool res = CommandInterpreter_Do(
+				args->commandline,
+				args->separator,
+				args->data
+			);
+
+	if(args->postDo != NULL)
+		args->postDo(
+				args->commandline,
+				args->separator,
+				args->data,
+				res
+			);
+
+	free(args);
+	return 0;
 }
 
 bool CommandInterpreter_Do(char* command, char* separator, void* extraData)

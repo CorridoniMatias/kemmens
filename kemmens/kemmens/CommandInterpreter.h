@@ -13,6 +13,14 @@ struct
 	void (*runner)(int argC, char** args, char* callingLine, void* extraData);
 } typedef CommandRunnerStructure;
 
+struct
+{
+	char* commandline;
+	char* separator;
+	void* data;
+	void (*postDo)(char* cmd, char* sep, void* args, bool actionFired);
+} typedef ThreadableDoStructure;
+
 /*
  *		Registra un comando para que se llame a runner cuando llegue el comando registrado a traves de CommandInterpreter_Do(...).
  *
@@ -59,6 +67,16 @@ void CommandInterpreter_FreeArguments(char** args);
  *		Deregistra todos los comandos y libera la memoria reservada.
  */
 void CommandInterpreter_Destroy();
+
+/*
+ * 		Hace lo mismo que el DO pero se puede threadear, se usa ThreadableDoStructure para los argumentos.
+ */
+void* CommandInterpreter_DoThreaded(void* arg);
+
+/*
+ *		Crea estructura del interpretador para thredear el Do.
+ */
+ThreadableDoStructure* CommandInterpreter_MallocThreadableStructure();
 
 
 #endif /* KEMMENS_COMMANDINTERPRETER_H_ */

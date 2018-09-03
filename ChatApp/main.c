@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 bool recibir = true;
+ThreadPool* pool;
 
 void cleanup()
 {
@@ -23,19 +24,39 @@ void exitok()
 	exit_gracefully_custom(cleanup, EXIT_SUCCESS);
 }
 
+void* postDo(char* cmd, char* sep, void* args, bool fired)
+{
+	if(!fired)
+		SocketCommons_SendMessageString((int)args, "Lo recibido no es comando!");
+
+	free(cmd);
+ return 0;
+}
+
 void onPacketArrived(int socketID, int message_type, void* data)
 {
-	bool esComando = false;
 	if(message_type == MESSAGETYPE_STRING)
 	{
 		printf("STRING RECIBIDO: %s\n", ((char*)data) );
-		esComando = CommandInterpreter_Do((char*)data, " ", (void*)socketID);
 
-		if(!esComando)
-			SocketCommons_SendMessageString(socketID, "Recibido!");
+		ThreadableDoStructure* st = CommandInterpreter_MallocThreadableStructure();
+
+		st->commandline = (char*)data;
+		st->data = (void*)socketID;
+		st->separator = " ";
+		st->postDo = (void*)postDo;
+
+		ThreadPoolRunnable* run = ThreadPool_CreateRunnable();
+
+		run->data = (void*)st;
+		run->runnable = (void*)CommandInterpreter_DoThreaded;
+
+		ThreadPool_AddJob(pool, run);
+
+		//CommandInterpreter_Do((char*)data, " ", (void*)socketID);
 	}
 
-	free(data);
+	//free(data);
 }
 
 void processLineInput(char* line)
@@ -69,10 +90,10 @@ void *CommandDouble (int argC, char** args, char* callingLine, void* extraData)
 
 void *CommandStopServer (int argC, char** args, char* callingLine, void* extraData)
 {
-
 	SocketServer_Stop();
 
 	CommandInterpreter_FreeArguments(args);
+	ThreadPool_FreeGracefully(pool);
 	return 0;
 }
 
@@ -96,7 +117,7 @@ void ClientError(int socketID, int errorCode)
 void* Server()
 {
 	CommandInterpreter_Init();
-
+	pool = ThreadPool_CreatePool(10, false);
 	CommandInterpreter_RegisterCommand("stop", (void*)CommandStopServer);
 	CommandInterpreter_RegisterCommand("double", (void*)CommandDouble);
 
