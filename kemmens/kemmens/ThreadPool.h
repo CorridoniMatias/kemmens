@@ -5,14 +5,34 @@
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
 
+/**
+ * 		Estructura que representa un job o trabajo a depositar en el pool
+ * 		CAMPOS:
+ * 			should_free_data: Flag que nos indica si deberiamos hacer un free(data) en caso que se llame a la funcion para
+ * 							  limpiar todos los jobs, esto es porque si lo que esta en data no es algo del heap -> seg fault
+ * 			data: Datos del trabajo, seran tomados como parametros por la funcion
+ * 			runable: Funcion a ejecutar al llevar a cabo el trabajo; recibe por parametro un cierto argumento
+ */
 struct ThreadPool_func_s
 {
-	//should_free_data nos indica si deberiamos hacer un free(data) en caso que se llame a la funcion para limpiar todos los trabajos, esto es porque si lo que esta en data no es algo del heap -> seg fault.
-	bool should_free_data;
+	/*free_data nos indica como deberiamos hacer un free(data) en caso que se llame a la funcion para limpiar todos los trabajos, esto es porque si lo que esta en data no es algo del heap -> seg fault.
+	en caso que free_data != NULL => se va a ejecutar esta funcion para liberar data. De lo contrario no se hace nada*/
+	void (*free_data)(void* data);
 	void* data;
 	void (*runnable)(void* args);
 } typedef ThreadPoolRunnable;
 
+/**
+ * 		Estructura que representa un pool de threads (pozo de hilos) donde hay hilos disponibles a la espera de jobs a ejecutar
+ * 		CAMPOS:
+ * 			terminate_all: Flag que indica si es necesario terminar todos los hilos y jobs del pool
+ * 			detached: Flag que indica si los hilos a crear en el pool son detacheados
+ * 			free_threads: Cantidad de hilos libres/disponibles en el pool
+ * 			threads: Lista de hilos del pool
+ * 			jobs: Cola de jobs/trabajos pendientes, sin hilo asignado aun
+ * 			cond: Variable de condicion, representa la condicion a evaluar para bloquear/desbloquear el mutex
+ * 			lock: Semaforo mutex para evitar la concurrencia en la llegada de varios jobs
+ */
 struct ThreadPool_s
 {
 	bool terminate_all;

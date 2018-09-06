@@ -84,7 +84,7 @@ ThreadPoolRunnable* ThreadPool_CreateRunnable()
 
 	run->data = NULL;
 	run->runnable = NULL;
-	run->should_free_data = false;
+	run->free_data = NULL;
 
 	return run;
 }
@@ -153,8 +153,12 @@ void ThreadPool_ClearPendingJobs(ThreadPool* pool)
 	{
 		ThreadPoolRunnable* actual = (ThreadPoolRunnable*)job;
 
-		if(actual->should_free_data && actual->data != NULL)
-			free(actual->data); //SI el thread que esta corriendo esto actualmente es detached y le liberamos la memoria que esta usando puede causar un seg. fault!
+		if(actual->free_data != NULL && actual->data != NULL)
+		{
+			//SI el thread que esta corriendo esto actualmente es detached y le liberamos la memoria que esta usando puede causar un seg. fault!
+			//El usuario tiene que especificar como se va a liberar la memoria de lo que sea que esta aca adentro.
+			actual->free_data(actual->data);
+		}
 
 		if(actual)
 			free(actual);

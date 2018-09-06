@@ -7,17 +7,43 @@
 #include "commons/string.h"
 #include "commons/collections/list.h"
 
+/**
+ * 		Estructura que almacena la informacion del interpretador de comandos y su ejecucion
+ * 		PARAMETROS:
+ * 			command: Comando a analizar y contrastar con la primer palabra de la linea entera
+ * 			runner: Funcion a ejecutar al llamar al comando registrado
+ * 				PARAMETROS:
+ * 					argC: Cantidad de argumentos del comando, sin contar el nombre del mismo
+ * 					args: Array de cadenas que almacena los argumentos; el 0 es el comando en si
+ * 					callingLine: Copia de la linea entera de comando
+ * 					extraData: Informacion extra, opcional
+ */
 struct
 {
 	char* command;
 	void (*runner)(int argC, char** args, char* callingLine, void* extraData);
 } typedef CommandRunnerStructure;
 
+/**
+ * 		Estructura donde guardar la informacion para hacer un do threadeado (a traves de un hilo)
+ * 		CAMPOS:
+ * 			commandline: Linea de comando entera a interpretar
+ * 			separator: Caracter que actua de separador para analizar el comando
+ * 			data: Datos que la funcion a ejecutar en el hilo tomara como parametros
+ * 			postDo: Funcion que se ejecutara en el hilo levantado
+ * 				PARAMETROS:
+ * 					cmd: Linea de comando entera a interpretar
+ * 					sep: Caracter que actua de separador para analizar el comando
+ * 					args: Parametros a pasarle a la funcion del hilo
+ * 					actionFired: Flag que indica si se dispara una accion o no al interpretar
+ */
 struct
 {
 	char* commandline;
 	char* separator;
 	void* data;
+	//free_data indica como se deberia hacer un free de la memoria en void* data
+	void (*free_data)(void* data);
 	void (*postDo)(char* cmd, char* sep, void* args, bool actionFired);
 } typedef ThreadableDoStructure;
 
@@ -77,6 +103,12 @@ void* CommandInterpreter_DoThreaded(void* arg);
  *		Crea estructura del interpretador para thredear el Do.
  */
 ThreadableDoStructure* CommandInterpreter_MallocThreadableStructure();
+
+/*
+ * 		Funcion para liberar la estructura de ThreadableDoStructure correctamente.
+ * 		Observar el funcionamiento de la funcion para ver como hace las cosas!
+ */
+void CommandInterpreter_FreeThreadableDoStructure(void* threadableDoStructure);
 
 
 #endif /* KEMMENS_COMMANDINTERPRETER_H_ */

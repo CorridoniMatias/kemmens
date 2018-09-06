@@ -15,6 +15,7 @@ ThreadableDoStructure* CommandInterpreter_MallocThreadableStructure()
 	st->data = NULL;
 	st->separator = NULL;
 	st->postDo = NULL;
+	st->free_data NULL;
 
 	return st;
 }
@@ -159,5 +160,17 @@ void CommandInterpreter_Destroy()
 
 	list_iterate(interpreters, deregistercommands);
 	list_destroy_and_destroy_elements(interpreters, (void*)free);
+}
+
+void CommandInterpreter_FreeThreadableDoStructure(void* threadableDoStructure)
+{
+	ThreadableDoStructure* tds = (ThreadableDoStructure*)threadableDoStructure;
+
+	free(tds->commandline);
+
+	if(tds->free_data != NULL)
+		tds->free_data(tds->data);
+
+	free(tds);
 }
 
