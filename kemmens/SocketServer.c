@@ -37,7 +37,7 @@ void SocketServer_Start(char name[5], int port)
 
 
 	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	serv_addr.sin_addr.s_addr = INADDR_ANY;
 	serv_addr.sin_port = htons(port);
 
 	if( bind(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
@@ -146,10 +146,10 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 					{
 						if(error_code == 0)
 						{
-							free(list_remove(connections, i));
-
 							if(actions.OnClientDisconnect != NULL)
 									actions.OnClientDisconnect(currconn);
+
+							free(list_remove(connections, i)); //Lo ultimo que hacemos es el free por si algun otro recurso hace referencia al espacio de memoria del int malloceado que representa al descriptor del socket.
 						} else
 						{
 							if(actions.OnReceiveError != NULL)

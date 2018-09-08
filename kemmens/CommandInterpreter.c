@@ -15,7 +15,7 @@ ThreadableDoStructure* CommandInterpreter_MallocThreadableStructure()
 	st->data = NULL;
 	st->separator = NULL;
 	st->postDo = NULL;
-	st->free_data NULL;
+	st->free_data = NULL;
 
 	return st;
 }
