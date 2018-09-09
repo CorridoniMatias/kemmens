@@ -50,6 +50,7 @@ void onPacketArrived(int socketID, int message_type, void* data)
 
 		run->data = (void*)st;
 		run->runnable = (void*)CommandInterpreter_DoThreaded;
+		run->free_data = (void*)CommandInterpreter_FreeThreadableDoStructure;
 
 		ThreadPool_AddJob(pool, run);
 

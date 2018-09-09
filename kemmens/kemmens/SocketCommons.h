@@ -20,6 +20,11 @@ typedef struct {
  */
 int SocketCommons_SendMessageString(int socket, char* message);
 
+/*
+ * 		Permite enviar un string serializado indicando el tipo de dato serializado en serialized_content_type
+ */
+int SocketCommons_SendSerializedContent(int socket, char* serialized, int serialized_content_type);
+
 /* Recibe el header por el socket indicado.
  *
  *	retorna el socket propiamente dicho, en caso de error devuelve 0 (NULL). El free de la struct se hace solo en caso de NULL, sino hay que hacer el free.
@@ -37,12 +42,6 @@ int SocketCommons_SendHeader(int socket, int length, int message_type);
  *	retorna puntero a header.
  */
 ContentHeader* SocketCommons_CreateHeader();
-
-/* Recibe un string por el socket indicado. El tamaño se debe pasar por parametro. No se deberia usar, ver SocketCommons_ReceiveData(...)
- *
- *	retorna el string. HACER FREE DESPUES DE USAR.
- */
-char* SocketCommons_ReceiveStringWithLength(int socket, int length);
 
 
 /*		Recibe datos por el socket indicado. El tipo recibido se almacena en message_type. Los tipos soportados se pueden encontrar en SocketMessageTypes.h

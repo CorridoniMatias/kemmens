@@ -9,8 +9,13 @@ ContentHeader* SocketCommons_CreateHeader()
 
 int SocketCommons_SendMessageString(int socket, char* message)
 {
-	int leng = string_length(message);
-	return SocketCommons_SendData(socket, MESSAGETYPE_STRING, message, leng);
+	return SocketCommons_SendSerializedContent(socket, message, MESSAGETYPE_STRING);
+}
+
+int SocketCommons_SendSerializedContent(int socket, char* serialized, int serialized_content_type)
+{
+	int leng = string_length(serialized) + 1;
+	return SocketCommons_SendData(socket, serialized_content_type, serialized, leng);
 }
 
 ContentHeader* SocketCommons_ReceiveHeader(int socket, int* error_status)
@@ -57,24 +62,6 @@ int SocketCommons_SendHeader(int socket, int length, int message_type)
 	return status;
 }
 
-char* SocketCommons_ReceiveStringWithLength(int socket, int length)
-{
-	if(length < 1)
-		return 0;
-
-	char* str = (char*)malloc(length+1); //+1 porque le vamos a agregar el \0
-	int status = recv(socket, str, length, MSG_WAITALL);
-
-	if(status < 1)
-	{
-		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveStringWithLength - Error al recibir string, codigo: %d", status);
-		free(str);
-		return 0;
-	}
-	str[length] = '\0';
-	return str;
-}
-
 void* SocketCommons_ReceiveData(int socket, int* message_type, int* error_status)
 {
 	if(message_type == NULL)
@@ -93,13 +80,7 @@ void* SocketCommons_ReceiveData(int socket, int* message_type, int* error_status
 	*message_type = header->message_type;
 	free(header);
 
-	Logger_Log((void*)log_info, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - Recibiendo datos, length: %d, content type: %d", len, *message_type);
-
-	//los strings necesitan un manejo especial con el \0 por eso hacemos esto.
-	if(*message_type == MESSAGETYPE_STRING)
-	{
-		return SocketCommons_ReceiveStringWithLength(socket, len);
-	}
+	Logger_Log(LOG_DEBUG, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - Recibiendo datos, length: %d, content type: %d", len, *message_type);
 
 	void* buffer = malloc(len);
 
@@ -107,7 +88,13 @@ void* SocketCommons_ReceiveData(int socket, int* message_type, int* error_status
 
 	if(status < 1)
 	{
-		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - Error al recibir datos, codigo: %d", status);
+		if(error_status != NULL)
+		{
+			*error_status = errno;
+			Logger_Log(LOG_DEBUG, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - Return recv: %d, errno: %d, error: %s", status, *error_status, strerror(*error_status));
+		}
+
+		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - Error al recibir datos!");
 		free(buffer);
 		return 0;
 	}
