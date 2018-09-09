@@ -1,6 +1,7 @@
 #include "kemmens/SocketCommons.h"
 #include <errno.h>
 #include "stdio.h"
+#include <unistd.h>
 
 ContentHeader* SocketCommons_CreateHeader()
 {
@@ -117,6 +118,15 @@ int SocketCommons_SendData(int socket, int message_type, void* data, int dataLen
 	return status;
 }
 
+void cerrarSocket(int descriptorSocket){
+      if((close(descriptorSocket) !=0 ))
+     {
+    	 Logger_Log(LOG_ERROR, "No se pudo cerrar el socket descripto por %d", descriptorSocket);
+    	 return;
+     }
+     Logger_Log(LOG_ERROR, "Socket descripto por %d cerrado, fin de la conexion a traves de el", descriptorSocket);
+     return;
+ }
 
 
 

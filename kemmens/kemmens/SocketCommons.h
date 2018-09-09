@@ -9,6 +9,12 @@
 #include <sys/socket.h> // Para crear sockets, enviar, recibir, etc
 #include <netdb.h> // Para getaddrinfo
 
+/**
+ * 		Estructura que representa el encabezado de un mensaje, para ser interpretada segun el protocolo
+ * 		CAMPOS:
+ * 			body_length: Largo del mensaje, en bytes
+ * 			message_type: Tipo de mensaje a enviar/recibir; ver en SocketMessageTypes.h
+ */
 typedef struct {
 	uint32_t body_length;
 	uint32_t message_type;
@@ -56,5 +62,12 @@ void* SocketCommons_ReceiveData(int socket, int* message_type, int* error_status
  * 		retorna el estado de envio.
  */
 int SocketCommons_SendData(int socket, int message_type, void* data, int dataLength);
+
+/*
+ * 	ACCION: Cierra un socket; loguea el exito o fracaso en la clausura
+ * 	PARAMETROS:
+ * 		descriptorSocket: Descriptor numerico o fd del socket a cerrar
+ */
+void cerrarSocket(int descriptorSocket);
 
 #endif /* SOCKETCOMMONS_H_ */
