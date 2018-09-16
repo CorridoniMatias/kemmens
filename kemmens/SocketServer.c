@@ -222,3 +222,8 @@ t_list* SocketServer_GetConnectedClients()
 {
 	return connections;
 }
+
+OnArrivedData* SocketServer_CreateOnArrivedData()
+{
+	return (OnArrivedData*)malloc(sizeof(OnArrivedData));
+}
