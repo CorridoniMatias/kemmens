@@ -9,6 +9,7 @@
 #include "kemmens/SocketCommons.h"
 #include "kemmens/CommandInterpreter.h"
 #include "kemmens/ThreadPool.h"
+#include "kemmens/Serialization.h"
 #include <unistd.h>
 
 bool recibir = true;
@@ -305,10 +306,49 @@ void ThreadPoolFunc()
 	exitok();
 }
 
+void TestSerialization()
+{
+	Logger_CreateLog("./chatapp.log", "CHARAPP", true);
+
+	int* i1 = (int*)malloc(4);
+	*i1 = 1;
+	char* i2 = (char*)malloc(6);
+	strcpy(i2, "hola!");
+	/**i2 = 2;
+	int* i3 = (int*)malloc(4);
+	*i3 = 3;
+	int* i4 = (int*)malloc(4);
+	*i4 = 4;*/
+
+	SerializedPart p1 = {.size = 4, .data = i1};
+	SerializedPart p2 = {.size = 6, .data = i2};
+
+	void* packet = Serialization_Serialize(2, p1, p2);
+
+	printf("OK\n");
+
+	uint32_t size;
+	memcpy(&size, packet + 8, sizeof(uint32_t));
+
+	char* data;
+
+	memcpy(data, packet + 12, size);
+
+	printf("size = %d, data = %s\n", size, data);
+
+	free(packet);
+	free(i1);
+	free(i2);
+	/*free(i3);
+	free(i4);*/
+	exitok();
+}
+
 int main(int argc, char **argv)
 {
 	//ProbarCommandInterpreter();
 	//ThreadPoolFunc();
+	TestSerialization();
 
 	Logger_CreateLog("./chatapp.log", "CHARAPP", true);
 
