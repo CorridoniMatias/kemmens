@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+//------ESTRUCTURAS EMPLEADAS------//
+
 struct
 {
 	//Define el LARGO del campo data en bytes.
@@ -14,6 +16,21 @@ struct
 	//Los datos a serializar.
 	void* data;
 } typedef SerializedPart;
+
+/*
+ * 		Estructura para almacenar los datos de una deserializacion de paquete
+ * 		CAMPOS:
+ * 			parts: Array de partes (que, al poder ser de cualquier tipo, son todas void*)
+ * 				   donde guardare todo lo que vaya leyendo del packet serializado a deserializar
+ * 			count: Cantidad de partes leidas y guardadas
+ */
+struct
+{
+	void** parts;
+	int count;
+} typedef DeserializedData;
+
+//------FUNCIONES DEFINIDAS------//
 
 /*
  * 		Permite serializar cualquier tipo de datos.
@@ -47,4 +64,14 @@ struct
  */
 void* Serialization_Serialize(int fieldCount, ...);
 
+/*
+ * 	ACCION: Deserializa un paquete serializado y guarda sus partes en una estructura, junto con la cantidad de las mismas
+ * 	PARAMETROS:
+ * 		serializedPacket: Paquete serializado que pretendo deserializar, leyendo partes y tamanios
+ * 		dest: Estructura donde guardare las partes leidas (en un array) y la cantidad de estas
+ * 	!!!!!!!!NOTA!!!!!!!!: Por algun motivo, copia mal los ints; revisar esto
+ */
+void Serialization_Deserialize(void* serializedPacket, DeserializedData* dest);
+
 #endif /* KEMMENS_SERIALIZATION_H_ */
+

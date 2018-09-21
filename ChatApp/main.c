@@ -328,11 +328,11 @@ void TestSerialization()
 	printf("OK\n");
 
 	uint32_t size;
-	memcpy(&size, packet + 8, sizeof(uint32_t));
+	memcpy(&size, packet + 4, sizeof(uint32_t));
 
-	char* data;
+	char* data = malloc(6);
 
-	memcpy(data, packet + 12, size);
+	memcpy(data, packet + 12, 6);
 
 	printf("size = %d, data = %s\n", size, data);
 
@@ -344,13 +344,44 @@ void TestSerialization()
 	exitok();
 }
 
+void TestDeserialization()
+{
+
+	int* i1 = (int*)malloc(4);
+	*i1 = 1;
+	char* i2 = (char*)malloc(6);
+	strcpy(i2, "hola!");
+	/*i2 = 2;
+	int* i3 = (int*)malloc(4);
+	*i3 = 3;
+	int* i4 = (int*)malloc(4);
+	*i4 = 4;*/
+
+	SerializedPart p1 = {.size = 4, .data = i1};
+	SerializedPart p2 = {.size = 6, .data = i2};
+
+	void* packet = Serialization_Serialize(2, p1, p2);
+
+	DeserializedData arr;
+
+	Serialization_Deserialize(packet, &arr);
+
+	printf("FieldCount: %d\n", arr.count);
+	printf("First field: %d\n", (int) arr.parts[0]);
+	printf("Second field: %s\n", (char*) arr.parts[1]);
+}
+
 int main(int argc, char **argv)
 {
 	//ProbarCommandInterpreter();
 	//ThreadPoolFunc();
-	TestSerialization();
+	//TestSerialization();
+	//TestDeserialization();
 
 	Logger_CreateLog("./chatapp.log", "CHARAPP", true);
+
+
+	///////////////////////////////////////////////////////
 
 	if(argc < 2)
 	{
