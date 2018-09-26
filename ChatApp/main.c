@@ -348,7 +348,7 @@ void TestDeserialization()
 {
 
 	int* i1 = (int*)malloc(4);
-	*i1 = 1;
+	*i1 = 114;
 	char* i2 = (char*)malloc(6);
 	strcpy(i2, "hola!");
 	/*i2 = 2;
@@ -367,7 +367,7 @@ void TestDeserialization()
 	Serialization_Deserialize(packet, &arr);
 
 	printf("FieldCount: %d\n", arr.count);
-	printf("First field: %d\n", (int) arr.parts[0]);
+	printf("First field: %d\n", *((int*) arr.parts[0]));
 	printf("Second field: %s\n", (char*) arr.parts[1]);
 }
 
