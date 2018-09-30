@@ -63,4 +63,29 @@ void StringUtils_FreeArray(char** array)
 	free(array);
 }
 
+static int StringUtils_IndexOfInternal(char* str, int character, bool reverse)
+{
+	char * idxptr;
+
+	if(reverse)
+		idxptr = strrchr(str, character);
+	else
+		idxptr = strchr(str, character);
+
+	if(idxptr == NULL)
+		return -1;
+
+	return idxptr-str;
+}
+
+int StringUtils_IndexOf(char* str, int character)
+{
+	return StringUtils_IndexOfInternal(str, character, false);
+}
+
+int StringUtils_LastIndexOf(char* str, int character)
+{
+	return StringUtils_IndexOfInternal(str, character, true);
+}
+
 

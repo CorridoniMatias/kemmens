@@ -16,4 +16,8 @@ int StringUtils_ArraySize(char** array);
 
 void StringUtils_FreeArray(char** array);
 
+int StringUtils_IndexOf(char* str, int character);
+
+int StringUtils_LastIndexOf(char* str, int character);
+
 #endif /* KEMMENS_STRINGUTILS_H_ */
