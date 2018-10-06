@@ -63,6 +63,31 @@ void StringUtils_FreeArray(char** array)
 	free(array);
 }
 
+char* StringUtils_ArrayFromInts(int* ints, int intsCount, bool startingBracket, bool endingBracket)
+{
+	char* blocksCharArray = (char*)malloc( ((startingBracket) ? 2 : 1) );
+	if(startingBracket)
+		strcpy(blocksCharArray, "[");
+	else
+		blocksCharArray[0] = '\0';
+
+	char* temp;
+	for(int i=0;i<intsCount;i++)
+	{
+		temp = string_itoa( ints[i] );
+		string_append(&blocksCharArray, temp);
+		if(i < intsCount - 1)
+			string_append(&blocksCharArray, ",");
+
+		free(temp);
+	}
+
+	if(endingBracket)
+		string_append(&blocksCharArray, "]");
+
+	return blocksCharArray;
+}
+
 static int StringUtils_IndexOfInternal(char* str, int character, bool reverse)
 {
 	char * idxptr;
