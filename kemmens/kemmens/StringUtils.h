@@ -45,4 +45,6 @@ int StringUtils_LastIndexOf(char* str, int character);
  */
 char* StringUtils_ArrayFromInts(int* ints, int intsCount, bool startingBracket, bool endingBracket);
 
+int StringUtils_CountOccurrences(char* str, char* needle);
+
 #endif /* KEMMENS_STRINGUTILS_H_ */

@@ -114,3 +114,20 @@ int StringUtils_LastIndexOf(char* str, int character)
 }
 
 
+int StringUtils_CountOccurrences(char* str, char* needle)
+{
+	int count = 0;
+	const char *tmp = str;
+	while((tmp = strstr(tmp, needle)))
+	{
+	   count++;
+	   tmp++;
+	}
+
+	return count;
+}
+
+
+
+
+
