@@ -1,4 +1,0 @@
-IPPlanificador=192.168.1.1
-PuertoPlanificador=8000
-IPCoordinador=192.168.1.1
-PuertoCoordinador=8001
