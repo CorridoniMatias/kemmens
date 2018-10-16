@@ -28,7 +28,7 @@ all: ChatApp
 ChatApp: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/Documentos/Proyectos/siso1c2018/kemmens/Debug" -o "ChatApp" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/Documentos/kemmens/kemmens/Debug" -o "ChatApp" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
