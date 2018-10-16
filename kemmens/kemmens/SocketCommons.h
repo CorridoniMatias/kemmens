@@ -3,6 +3,7 @@
 
 #include "commons/string.h"
 #include <string.h>
+#include <ctype.h>
 #include "logger.h"
 #include "SocketMessageTypes.h"
 #include <stdlib.h> // Para malloc
@@ -20,6 +21,8 @@ typedef struct {
 	uint32_t message_type;
 } __attribute__((packed)) ContentHeader;
 
+//------FUNCIONES DEFINIDAS------//
+
 /* Envia un string al socket indicado. Esta funcion ya envia el header automaticamente. Si el send del header falla devuelve -2.
  *
  *	retorna el estado del send, -2
@@ -27,9 +30,9 @@ typedef struct {
 int SocketCommons_SendMessageString(int socket, char* message);
 
 /*
- * 		Permite enviar un string serializado indicando el tipo de dato serializado en serialized_content_type
+ * 		Permite enviar un string indicando el tipo de dato que representa en content_type
  */
-int SocketCommons_SendSerializedContent(int socket, char* serialized, int serialized_content_type);
+int SocketCommons_SendStringAsContent(int socket, char* string, int content_type);
 
 /* Recibe el header por el socket indicado.
  *
@@ -57,6 +60,17 @@ ContentHeader* SocketCommons_CreateHeader();
 void* SocketCommons_ReceiveData(int socket, int* message_type, int* error_status);
 
 
+/*
+ * 		Recibe datos por el socket indicado. A diferencia de SocketCommons_ReceiveData esta funcion NO espera a recibir primero un ContentHeader
+ * 		por ese motivo se debe especificar a mano el expected_size.
+ *
+ * 		WARNING: el syscall a recv que se hace en esta funcion es BLOQUEANTE por ende no se va a DESBLOQUEAR hasta que se reciban los expected_size bytes.
+ *
+ * 		Uso recomendado: cuando se sabe el tamaño de lo que se va a recibir a priori y no se necesita especificar el tipo de datos tampoco.
+ */
+void* SocketCommons_ReceiveDataWithoutHeader(int socket, int expected_size, int* error_status);
+
+
 /*		Envia datos por el socket indicado. El tipo puesto en message_type debe ser un tipo conocido y definido en SocketMessageTypes.h, data contiene los datos a ser enviado y dataLength es el largo de lo contenido en la variable data.
  *
  * 		retorna el estado de envio.
@@ -64,10 +78,17 @@ void* SocketCommons_ReceiveData(int socket, int* message_type, int* error_status
 int SocketCommons_SendData(int socket, int message_type, void* data, int dataLength);
 
 /*
+ * 		Envia datos por el socket indicado. A diferencia de SocketCommons_SendData esta funcion NO envia el ContentHeader indicador de tamaño y tipo.
+ *
+ * 		Uso recomendado: cuando el recipiente ya sabe el tamaño de lo que va a recibir y tambien sabe el tipo de datos a recibir.
+ */
+int SocketCommons_SendDataWithoutHeader(int socket, void* data, int dataLength);
+
+/*
  * 	ACCION: Cierra un socket; loguea el exito o fracaso en la clausura
  * 	PARAMETROS:
  * 		descriptorSocket: Descriptor numerico o fd del socket a cerrar
  */
-void cerrarSocket(int descriptorSocket);
+void SocketCommons_CloseSocket(int descriptorSocket);
 
 #endif /* SOCKETCOMMONS_H_ */
