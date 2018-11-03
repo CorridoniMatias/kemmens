@@ -6,6 +6,8 @@
 #include <commons/collections/list.h>
 #include "logger.h"
 #include "SocketCommons.h"
+#include <semaphore.h>
+#include <pthread.h>
 
 #define MAXWAITCONNECTIONS 10
 
@@ -61,11 +63,24 @@ struct
 	void* receivedData;
 } typedef OnArrivedData;
 
+struct
+{
+	int socketID; 			//Or the socket file descriptor
+	sem_t waitForData;		//Semaphore used when: another thread is expecting to receive data on the socket described by 'socketID'. If this occurs the thread should call SocketServer_WakeMeUpWhenDataIsAvailableOn(<socketID>).
+	bool isWaitingForData;	//If another thread if expecting to receive data on the socket described by 'socketID' this attribute is set to true, false otherwise.
+} typedef ServerClient;
+
 
 /**
  * 		Lista de conexiones activas del servidor
  */
 t_list* connections;
+pthread_mutex_t connections_lock;
+
+/*
+ * 		Lista de descriptores de sockets que el select va a ignorar, esto puede ser porque su procesamiento se este haciendo en otro lado.
+ */
+//t_list* ignoredSockets;
 
 /**
  * Cadena que almacena el nombre del servidor, para volcar en los logs
@@ -121,5 +136,29 @@ bool SocketServer_IsClientConnected(int socket);
  */
 OnArrivedData* SocketServer_CreateOnArrivedData();
 
+/*
+ * 		!!!! Funcion a ser llamada por un thread DISTINTO al que esta corriendo el server (donde se llamo a listenForConnections) !!!!
+ *
+ * 		Le indica al Server que cuando haya datos disponibles en el socket 'socketToWatch' no haga el flujo normal de llamar a OnPacketReceived()
+ * 		sino que va a desbloquear el hilo que llamo a esta funcion.
+ *
+ * 		SOLAMENTE DEBE SER LLAMARA POR UN HILO A LA VEZ!
+ */
+bool SocketServer_WakeMeUpWhenDataIsAvailableOn(int socketToWatch);
+
+/*
+ *		Le avisa al servidor que el socket 'disconnectedSocket' se desconecto para que este lo remueva de la lista de clientes.
+ *
+ *		Si un cliente se desconecta y el server se entera por este medio (el recv estaba siendo manejado por otro thread, por ejemplo) entonces OnClientDisconnect no sera llamado.
+ */
+void SocketServer_NotifyClientDisconnect(int disconnectedSocket);
+
+/*
+t_list* SocketServer_GetIgnoredSockets();
+
+void SocketServer_IgnoreSocket(int socketToIgnore);
+
+void SocketServer_ReAttendSocket(int socketToAttend);
+*/
 
 #endif

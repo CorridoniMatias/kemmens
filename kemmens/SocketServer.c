@@ -18,6 +18,24 @@ int sock = -1;
 int closeAll = 0;
 fd_set descriptores_clientes;
 
+static ServerClient* SocketServer_CreateClient(int socketID)
+{
+	ServerClient* client = (ServerClient*)malloc(sizeof(ServerClient));
+
+	client->socketID = socketID;
+	client->isWaitingForData  = false;
+	sem_init(&client->waitForData, 0, 0);
+
+	return client;
+}
+
+static void SocketServer_DestroyClient(void* client) //en realidad seria un ServerClient* pero asi cumple la interfaz de las commons
+{
+	ServerClient* rclient = (ServerClient*)client;
+	sem_destroy(&rclient->waitForData);
+	free(rclient);
+}
+
 void SocketServer_Start(char name[5], int port)
 {
 	//Guardar el nombre para logs.
@@ -61,9 +79,11 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 	Logger_Log(LOG_INFO, "Servidor '%s' escuchando por conexiones entrantes...", alias);
 
 	connections = list_create();
+	//ignoredSockets = list_create();
+	pthread_mutex_init(&connections_lock, NULL);
 
 	int connlistsize, currconn, connected_socket, sel, max_fd = sock; //el descriptor maximo empieza como sock (el master y unico que hay por ahora) pero puede ser mas grande a medida que lleguen sockets.
-
+	ServerClient* currclient;
 	//Si recibimos una funcion para manejar el procesamiento del input por linea se lo pasamos a readline.
 	if(actions.OnConsoleInputReceived != 0)
 		rl_callback_handler_install("> ", (rl_vcpfunc_t*) actions.OnConsoleInputReceived);
@@ -78,12 +98,15 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 		FD_SET(STDIN, &descriptores_clientes);
 
 		//Agregamos todos los descriptores a la lista de descriptores del select
+		pthread_mutex_lock(&connections_lock);
 		connlistsize = list_size(connections);
 		for(int i = 0; i < connlistsize; i++)
 		{
-			currconn = *((int*)list_get(connections, i)); //obtenemos el valor del socket como int almacenado en la lista.
-			FD_SET(currconn, &descriptores_clientes); //Registramos al cliente como un descriptor valido
+			//currconn = *((int*)list_get(connections, i)); //obtenemos el valor del socket como int almacenado en la lista.
+			currclient = (ServerClient*)list_get(connections, i);
+			FD_SET(currclient->socketID, &descriptores_clientes); //Registramos al cliente como un descriptor valido
 		}
+		pthread_mutex_unlock(&connections_lock);
 
 		//Bloqueamos hasta que llegue algo.
 		sel = select( max_fd + STDIN + 1 // la cantidad va a ser max_fd + STDIN + 1 porque todos los sockets que nos lleguen tanto del teclado como de red tienen que entrar
@@ -115,10 +138,15 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 
 			Logger_Log(LOG_INFO, "'%s' -> Conexion entrante aceptada en %d", alias, connected_socket);
 
+			ServerClient* client = SocketServer_CreateClient(connected_socket);
+			pthread_mutex_lock(&connections_lock);
+			list_add(connections, client);
+			pthread_mutex_unlock(&connections_lock);
+			/*
 			int* temp = malloc(sizeof(int)); //el free a esto se hace cuando se cierra la conexion con este socket.
 			memcpy(temp, &connected_socket, sizeof(int));
 			list_add(connections, temp);
-
+			*/
 			if(actions.OnClientConnected != NULL)
 				actions.OnClientConnected(connected_socket);
 
@@ -127,49 +155,80 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 		}
 		else
 		{
+			//int elemSize = list_size(ignoredSockets);
+			//int tmp;
+			//int isIgnored;
 			//connlistsize se actualiza al comienzo del while
 			for(int i = 0; i < connlistsize; i++)
 			{
-				currconn = *((int*)list_get(connections, i)); //obtenemos el valor del socket como int almacenado en la lista.
+				pthread_mutex_lock(&connections_lock);
+				//currconn = *((int*)list_get(connections, i)); //obtenemos el valor del socket como int almacenado en la lista.
+				currclient = (ServerClient*)list_get(connections, i);
+				pthread_mutex_unlock(&connections_lock);
+				/*isIgnored = 0;
+
+				for(int i = 0; i < elemSize; i++)
+				{
+					tmp = *((int*)list_get(ignoredSockets, i));
+					if(tmp == currconn)
+					{
+						Logger_Log(LOG_DEBUG, "KEMMENSLIB -> SOCKETSERVER :: Ignorando elemento recibido por el socket %d, esta en la lista de ignorados!", tmp);
+						isIgnored = 1;
+						break;
+					}
+				}*/
 
 				//LLego algo para el socket que estamos analizando en currconn
-				if (FD_ISSET(currconn, &descriptores_clientes))
+				if (FD_ISSET(currclient->socketID, &descriptores_clientes))
 				{
+					printf("Comprobando!!!!\n");
+					//Si hay algun thread esperando datos en este socketID entonces no tenemos que manejar el trabajo nosotros, le avisamos al thread que hay datos disponibles para leer en el socketID indicado. Hablo en singular porque no tiene sentido que dos threads esten esperando en paralelo datos sobre EL MISMO socket.
+					//Nota: el thread que vaya a hacer el recv() debe manejar a mano si el cliente se desconecto! Ya que el servidor no puede enterarse, adicionalmente debe avisarle al servidor que esto sucedio para que remueva de la lista de clientes al socket.
+					if(currclient->isWaitingForData)
+					{
+						Logger_Log(LOG_DEBUG, "KEMMENSLIB -> SOCKETSERVER :: Datos recibidos de %d, derivando al thread a la espera de los mismos. OnPacketArrived no sera llamado!", currclient->socketID);
+						currclient->isWaitingForData = false;
+						sem_post(&currclient->waitForData);
+						break;
+					}
+					printf("ME CHUPA TODO UN HUEVO!!!!\n");
 					//NOS LLEGA UN MENSAJE DE UN CLIENTE!
 					int message_type = -1;
 					int error_code = -1;
 					void* data;
 
-					data = SocketCommons_ReceiveData(currconn, &message_type, &error_code);
+					data = SocketCommons_ReceiveData(currclient->socketID, &message_type, &error_code);
 
 					if(data == 0) //recv devolvio 0 o sea nos cerraron el socket.
 					{
 						if(error_code == 0)
 						{
 							if(actions.OnClientDisconnect != NULL)
-									actions.OnClientDisconnect(currconn);
-
-							free(list_remove(connections, i)); //Lo ultimo que hacemos es el free por si algun otro recurso hace referencia al espacio de memoria del int malloceado que representa al descriptor del socket.
+									actions.OnClientDisconnect(currclient->socketID);
+							pthread_mutex_lock(&connections_lock);
+							SocketServer_DestroyClient(list_remove(connections, i)); //Lo ultimo que hacemos es el free por si algun otro recurso hace referencia al espacio de memoria del int malloceado que representa al descriptor del socket.
+							pthread_mutex_unlock(&connections_lock);
 						} else
 						{
 							if(actions.OnReceiveError != NULL)
-								actions.OnReceiveError(currconn, error_code); //error_code contiene el errno devuelto por el S.O, en el Log (si es que se inicializo) esta pasado a string, y tambien se puede obtener con strerror()
+								actions.OnReceiveError(currclient->socketID, error_code); //error_code contiene el errno devuelto por el S.O, en el Log (si es que se inicializo) esta pasado a string, y tambien se puede obtener con strerror()
 						}
 					} else
 					{
 						//OJO! Se debe hacer free(data) en la funcion que atienda la llegada del paquete.
 						if(actions.OnPacketArrived != NULL)
-								actions.OnPacketArrived(currconn,  message_type, data);
+								actions.OnPacketArrived(currclient->socketID,  message_type, data);
 					}
 
 					break;
 				}
-
+				currconn = 0;
 				//Si recorrimos toda la lista y en ningun lado obtuvimos el socket que buscabamos entonces problablemente sea teclado, lo dejamos saber poniendo en -1 el flag.
 				if(i == connlistsize-1)
 				{
 					currconn = -1;
 				}
+
 			}
 
 			if((currconn == -1 || connlistsize == 0) && actions.OnConsoleInputReceived != NULL) //Input de teclado
@@ -184,22 +243,27 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 		rl_callback_handler_remove(); //Deregistrar el callback de readline.
 
 	SocketServer_TerminateAllConnections();
+	pthread_mutex_destroy(&connections_lock);
 }
 
 void SocketServer_TerminateAllConnections()
 {
 	void cerrarconexion(void* conn)
 	{
-		Logger_Log(LOG_INFO, "'%s' -> Cerrando conexion %d ", alias, *((int*)conn));
+		ServerClient* client = (ServerClient*)conn;
 
-		if(close( *((int*)conn) ) < 0)
+		Logger_Log(LOG_INFO, "'%s' -> Cerrando conexion %d ", alias, client->socketID);
+
+		if(close( client->socketID ) < 0)
 		{
-			Logger_Log(LOG_ERROR, "'%s' -> Error al cerrar conexion %d!", alias, *((int*)conn));
+			Logger_Log(LOG_ERROR, "'%s' -> Error al cerrar conexion %d!", alias, client->socketID);
 		}
 	}
-
+	pthread_mutex_lock(&connections_lock);
 	list_iterate(connections, cerrarconexion);
-	list_destroy_and_destroy_elements(connections, (void*)free);
+	list_destroy_and_destroy_elements(connections, (void*)SocketServer_DestroyClient);
+	pthread_mutex_unlock(&connections_lock);
+	//list_destroy_and_destroy_elements(ignoredSockets, (void*)free);
 	close(sock);
 }
 
@@ -207,7 +271,7 @@ bool SocketServer_IsClientConnected(int socket)
 {
 	bool connected(void* client)
 	{
-		return *((int*)client) == socket;
+		return ((ServerClient*)client)->socketID == socket;
 	}
 
 	return list_any_satisfy(connections, connected);
@@ -217,13 +281,82 @@ void SocketServer_Stop()
 {
 	closeAll = 1;
 }
-
+/*
 t_list* SocketServer_GetConnectedClients()
 {
 	return connections;
 }
 
+t_list* SocketServer_GetIgnoredSockets()
+{
+	return ignoredSockets;
+}
+
+void SocketServer_IgnoreSocket(int socketToIgnore)
+{
+	int* temp = malloc(sizeof(int));
+	memcpy(temp, &socketToIgnore, sizeof(int));
+	list_add(ignoredSockets, temp);
+}
+
+void SocketServer_ReAttendSocket(int socketToAttend)
+{
+	int elemSize = list_size(ignoredSockets);
+	int tmp;
+	for(int i = 0; i < elemSize; i++)
+	{
+		tmp = *((int*)list_get(ignoredSockets, i));
+
+		if(tmp == socketToAttend)
+			list_remove_and_destroy_element(ignoredSockets, i, (void*)free);
+	}
+}
+*/
 OnArrivedData* SocketServer_CreateOnArrivedData()
 {
 	return (OnArrivedData*)malloc(sizeof(OnArrivedData));
+}
+
+//Funcion thredeada
+bool SocketServer_WakeMeUpWhenDataIsAvailableOn(int socketToWatch)
+{
+	bool match = false;
+	pthread_mutex_lock(&connections_lock);
+	int connlistsize = list_size(connections);
+	ServerClient* currclient;
+	for(int i = 0; i < connlistsize; i++)
+	{
+		currclient = (ServerClient*)list_get(connections, i);
+
+		if(currclient->socketID == socketToWatch)
+		{
+			currclient->isWaitingForData = true;
+			match = true;
+			break;
+		}
+	}
+	pthread_mutex_unlock(&connections_lock);
+
+	if(match)
+		sem_wait(&currclient->waitForData);
+
+	return match;
+}
+
+void SocketServer_NotifyClientDisconnect(int disconnectedSocket)
+{
+	pthread_mutex_lock(&connections_lock);
+	int connlistsize = list_size(connections);
+	ServerClient* currclient;
+	for(int i = 0; i < connlistsize; i++)
+	{
+		currclient = (ServerClient*)list_get(connections, i);
+
+		if(currclient->socketID == disconnectedSocket)
+		{
+			SocketServer_DestroyClient(currclient);
+			break;
+		}
+	}
+	pthread_mutex_unlock(&connections_lock);
 }

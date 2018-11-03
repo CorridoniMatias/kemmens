@@ -12,6 +12,7 @@ C_SRCS += \
 ../StringUtils.c \
 ../ThreadManager.c \
 ../ThreadPool.c \
+../Utils.c \
 ../config.c \
 ../logger.c \
 ../megekemmen.c 
@@ -25,6 +26,7 @@ OBJS += \
 ./StringUtils.o \
 ./ThreadManager.o \
 ./ThreadPool.o \
+./Utils.o \
 ./config.o \
 ./logger.o \
 ./megekemmen.o 
@@ -38,6 +40,7 @@ C_DEPS += \
 ./StringUtils.d \
 ./ThreadManager.d \
 ./ThreadPool.d \
+./Utils.d \
 ./config.d \
 ./logger.d \
 ./megekemmen.d 

@@ -10,6 +10,7 @@
 #include "kemmens/CommandInterpreter.h"
 #include "kemmens/ThreadPool.h"
 #include "kemmens/Serialization.h"
+#include "kemmens/StringUtils.h"
 #include <unistd.h>
 
 bool recibir = true;
@@ -83,9 +84,64 @@ void *CommandDouble (int argC, char** args, char* callingLine, void* extraData)
 
 		if(SocketServer_IsClientConnected((int)extraData))
 			SocketCommons_SendMessageString((int)extraData, format);
-
 		free(format);
+		int type, error;
+		void* data;
+		//SocketCommons_SendMessageString((int)extraData, "Empezando comunicacion privada!");
+		while(1)
+		{
+			bool status = SocketServer_WakeMeUpWhenDataIsAvailableOn((int)extraData);
+			printf("!!!! DESBLOQUEADO: '%d'\n", status);
+			data = SocketCommons_ReceiveData((int)extraData, &type, &error);
+			if(data == 0 && error == 0)
+			{
+				SocketServer_NotifyClientDisconnect((int)extraData);
+				break;
+			}
+			printf("!!!!!!!! Recibido por privado: '%s'\n", (char*)data);
+			SocketCommons_SendMessageString((int)extraData, "OK!");
+			if(StringUtils_CountOccurrences((char*)data, "10") > 0)
+			{
+				free(data);
+				break;
+			}
+			free(data);
+		}
 	}
+
+	CommandInterpreter_FreeArguments(args);
+	return 0;
+}
+
+void *CommandPrivate (int argC, char** args, char* callingLine, void* extraData)
+{
+	if(argC == 1)
+	{
+		SocketCommons_SendMessageString((int)extraData, "Empezando comunicacion privada!");
+		Logger_Log(LOG_DEBUG, "Empezando comunicacion privada!");
+		int type, error;
+		void* data;
+		while(1)
+		{
+			bool status = SocketServer_WakeMeUpWhenDataIsAvailableOn((int)extraData);
+			printf("!!!! DESBLOQUEADO: '%d'\n", status);
+			data = SocketCommons_ReceiveData((int)extraData, &type, &error);
+			if(data == 0 && error == 0)
+			{
+				SocketServer_NotifyClientDisconnect((int)extraData);
+				break;
+			}
+			printf("!!!!!!!! Recibido por privado: '%s'\n", (char*)data);
+			SocketCommons_SendMessageString((int)extraData, "OK!");
+			if(StringUtils_CountOccurrences((char*)data, "10") > 0)
+			{
+				free(data);
+				break;
+			}
+			free(data);
+		}
+	}
+
 	CommandInterpreter_FreeArguments(args);
 	return 0;
 }
@@ -122,6 +178,7 @@ void* Server()
 	pool = ThreadPool_CreatePool(10, false);
 	CommandInterpreter_RegisterCommand("stop", (void*)CommandStopServer);
 	CommandInterpreter_RegisterCommand("double", (void*)CommandDouble);
+	CommandInterpreter_RegisterCommand("private", (void*)CommandPrivate);
 
 	SocketServer_Start("CHAT", 8086);
 	SocketServer_ActionsListeners actions = INIT_ACTION_LISTENER;
@@ -161,7 +218,7 @@ void Client(char* texto)
 	printf("Socket asignado %d\n", sock);
 	int m;
 	pthread_t threadRecv;
-	while(1)
+	/*while(1)
 	{
 		if(!recibir)
 			break;
@@ -173,6 +230,41 @@ void Client(char* texto)
 		ThreadManager_CreateThread(&threadRecv, ClientManageReceptions, ((void*) sock) );
 		printf("Awaiting response...\n");
 		pthread_join(threadRecv, NULL);
+
+		sleep(1);
+	}*/
+	m = SocketCommons_SendMessageString(sock, texto);
+
+	char* res;
+	int te, err;
+	//while(1)
+	{
+		res = SocketCommons_ReceiveData( sock , &te, &err);
+		if(res != 0)
+			printf("Response received type %d '%s'!\n", te, (char*)res);
+		else
+			recibir = false;
+	}
+
+	printf("String enviado. Retorno %d\n", m);
+	int i = 0;
+	char* tosend;
+	while(1)
+	{
+		if(!recibir)
+			break;
+		sleep(2);
+		tosend = StringUtils_Format("%d", i);
+		m = SocketCommons_SendMessageString(sock, tosend);
+		printf("Elemento enviado. Retorno %d\n", m);
+
+		res = SocketCommons_ReceiveData( sock , &te, &err);
+		if(res != 0)
+			printf("Response received type %d '%s'!\n", te, (char*)res);
+		else
+			recibir = false;
+
+		i++;
 
 		sleep(1);
 	}
