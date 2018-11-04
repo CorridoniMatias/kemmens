@@ -47,8 +47,9 @@ struct
 	 * 		socketID: Socket a traves del cual arribo el paquete
 	 * 		messageType: Tipo de mensaje recibido; ver tipos en SocketMessageTypes.h
 	 * 		actualData: Paquete de datos recibido
+	 * 		actualDataLength: Tamaño del contenido de actualData.
 	 */
-	void (*OnPacketArrived)(int socketID, int messageType, void* actualData);
+	void (*OnPacketArrived)(int socketID, int messageType, void* actualData, int actualDataLength);
 	/**
 	 * Accion a realizar al recibir una entrada por consola
 	 * PARAMETROS:
@@ -60,14 +61,16 @@ struct
 struct
 {
 	int calling_SocketID;
+	int receivedDataLength;
 	void* receivedData;
 } typedef OnArrivedData;
 
 struct
 {
-	int socketID; 			//Or the socket file descriptor
-	sem_t waitForData;		//Semaphore used when: another thread is expecting to receive data on the socket described by 'socketID'. If this occurs the thread should call SocketServer_WakeMeUpWhenDataIsAvailableOn(<socketID>).
-	bool isWaitingForData;	//If another thread if expecting to receive data on the socket described by 'socketID' this attribute is set to true, false otherwise.
+	int socketID; 				//Or the socket file descriptor
+	sem_t waitForData;			//Semaphore used when: another thread is expecting to receive data on the socket described by 'socketID'. If this occurs the thread should call SocketServer_WakeMeUpWhenDataIsAvailableOn(<socketID>).
+	bool isWaitingForData;		//If another thread if expecting to receive data on the socket described by 'socketID' this attribute is set to true, false otherwise.
+	OnArrivedData* arriveData;	//When the socketserver reads (recv()) the content the thread is expecting, its content and other data is stored in this heap variable.
 } typedef ServerClient;
 
 
@@ -142,16 +145,17 @@ OnArrivedData* SocketServer_CreateOnArrivedData();
  * 		Le indica al Server que cuando haya datos disponibles en el socket 'socketToWatch' no haga el flujo normal de llamar a OnPacketReceived()
  * 		sino que va a desbloquear el hilo que llamo a esta funcion.
  *
+ * 		Retorna un OnArriveData con todo el contenido recibido, verificar la estructura para ver que datos estan disponibles.
+ *
+ * 		Si el valor retornado es NULL, entonces puede ser que haya habido un error al recibir (ver OnReceiveError),
+ * 			el cliente se desconecto (OnClientDisconnect) o que el socket que se pidio vigilar no esta en la lista de clientes.
+ *
+ * 		IMPORTANTE: Hacer free de la data recibida y de la estructura cuando se termina de usar!
+ *
  * 		SOLAMENTE DEBE SER LLAMARA POR UN HILO A LA VEZ!
  */
-bool SocketServer_WakeMeUpWhenDataIsAvailableOn(int socketToWatch);
+OnArrivedData* SocketServer_WakeMeUpWhenDataIsAvailableOn(int socketToWatch);
 
-/*
- *		Le avisa al servidor que el socket 'disconnectedSocket' se desconecto para que este lo remueva de la lista de clientes.
- *
- *		Si un cliente se desconecta y el server se entera por este medio (el recv estaba siendo manejado por otro thread, por ejemplo) entonces OnClientDisconnect no sera llamado.
- */
-void SocketServer_NotifyClientDisconnect(int disconnectedSocket);
 
 /*
 t_list* SocketServer_GetIgnoredSockets();

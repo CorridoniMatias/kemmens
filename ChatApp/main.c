@@ -85,28 +85,6 @@ void *CommandDouble (int argC, char** args, char* callingLine, void* extraData)
 		if(SocketServer_IsClientConnected((int)extraData))
 			SocketCommons_SendMessageString((int)extraData, format);
 		free(format);
-		int type, error;
-		void* data;
-		//SocketCommons_SendMessageString((int)extraData, "Empezando comunicacion privada!");
-		while(1)
-		{
-			bool status = SocketServer_WakeMeUpWhenDataIsAvailableOn((int)extraData);
-			printf("!!!! DESBLOQUEADO: '%d'\n", status);
-			data = SocketCommons_ReceiveData((int)extraData, &type, &error);
-			if(data == 0 && error == 0)
-			{
-				SocketServer_NotifyClientDisconnect((int)extraData);
-				break;
-			}
-			printf("!!!!!!!! Recibido por privado: '%s'\n", (char*)data);
-			SocketCommons_SendMessageString((int)extraData, "OK!");
-			if(StringUtils_CountOccurrences((char*)data, "10") > 0)
-			{
-				free(data);
-				break;
-			}
-			free(data);
-		}
 	}
 
 	CommandInterpreter_FreeArguments(args);
@@ -119,25 +97,27 @@ void *CommandPrivate (int argC, char** args, char* callingLine, void* extraData)
 	{
 		SocketCommons_SendMessageString((int)extraData, "Empezando comunicacion privada!");
 		Logger_Log(LOG_DEBUG, "Empezando comunicacion privada!");
-		int type, error;
-		void* data;
 		while(1)
 		{
-			bool status = SocketServer_WakeMeUpWhenDataIsAvailableOn((int)extraData);
-			printf("!!!! DESBLOQUEADO: '%d'\n", status);
-			data = SocketCommons_ReceiveData((int)extraData, &type, &error);
-			if(data == 0 && error == 0)
+			OnArrivedData* data = SocketServer_WakeMeUpWhenDataIsAvailableOn((int)extraData);
+
+			if(data == NULL)
 			{
-				SocketServer_NotifyClientDisconnect((int)extraData);
+				printf("!!!! terminando...\n");
 				break;
 			}
-			printf("!!!!!!!! Recibido por privado: '%s'\n", (char*)data);
+
+			printf("!!!! DESBLOQUEADO: leido '%d' bytes\n", data->receivedDataLength);
+
+			printf("!!!!!!!! Recibido por privado: '%s'\n", (char*)data->receivedData);
 			SocketCommons_SendMessageString((int)extraData, "OK!");
-			if(StringUtils_CountOccurrences((char*)data, "10") > 0)
+			if(StringUtils_CountOccurrences((char*)data->receivedData, "10") > 0)
 			{
+				free(data->receivedData);
 				free(data);
 				break;
 			}
+			free(data->receivedData);
 			free(data);
 		}
 	}
@@ -198,10 +178,10 @@ void* Server()
 void* ClientManageReceptions(void* socket)
 {
 	char* res;
-	int te, err;
+	int te, err, len;
 	//while(1)
 	{
-		res = SocketCommons_ReceiveData( ((int)socket) , &te, &err);
+		res = SocketCommons_ReceiveData( ((int)socket) , &te, &len, &err);
 		if(res != 0)
 			printf("Response received type %d '%s'!\n", te, (char*)res);
 		else
@@ -236,10 +216,10 @@ void Client(char* texto)
 	m = SocketCommons_SendMessageString(sock, texto);
 
 	char* res;
-	int te, err;
+	int te, err, len;
 	//while(1)
 	{
-		res = SocketCommons_ReceiveData( sock , &te, &err);
+		res = SocketCommons_ReceiveData( sock , &te, &len, &err);
 		if(res != 0)
 			printf("Response received type %d '%s'!\n", te, (char*)res);
 		else
@@ -258,7 +238,7 @@ void Client(char* texto)
 		m = SocketCommons_SendMessageString(sock, tosend);
 		printf("Elemento enviado. Retorno %d\n", m);
 
-		res = SocketCommons_ReceiveData( sock , &te, &err);
+		res = SocketCommons_ReceiveData( sock , &te, &len, &err);
 		if(res != 0)
 			printf("Response received type %d '%s'!\n", te, (char*)res);
 		else

@@ -24,6 +24,7 @@ static ServerClient* SocketServer_CreateClient(int socketID)
 
 	client->socketID = socketID;
 	client->isWaitingForData  = false;
+	client->arriveData = NULL;
 	sem_init(&client->waitForData, 0, 0);
 
 	return client;
@@ -33,6 +34,7 @@ static void SocketServer_DestroyClient(void* client) //en realidad seria un Serv
 {
 	ServerClient* rclient = (ServerClient*)client;
 	sem_destroy(&rclient->waitForData);
+	//El free de rclient->arriveData ya deberia haberlo hecho el thread cuando ejecuto.
 	free(rclient);
 }
 
@@ -181,23 +183,13 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 				//LLego algo para el socket que estamos analizando en currconn
 				if (FD_ISSET(currclient->socketID, &descriptores_clientes))
 				{
-					printf("Comprobando!!!!\n");
-					//Si hay algun thread esperando datos en este socketID entonces no tenemos que manejar el trabajo nosotros, le avisamos al thread que hay datos disponibles para leer en el socketID indicado. Hablo en singular porque no tiene sentido que dos threads esten esperando en paralelo datos sobre EL MISMO socket.
-					//Nota: el thread que vaya a hacer el recv() debe manejar a mano si el cliente se desconecto! Ya que el servidor no puede enterarse, adicionalmente debe avisarle al servidor que esto sucedio para que remueva de la lista de clientes al socket.
-					if(currclient->isWaitingForData)
-					{
-						Logger_Log(LOG_DEBUG, "KEMMENSLIB -> SOCKETSERVER :: Datos recibidos de %d, derivando al thread a la espera de los mismos. OnPacketArrived no sera llamado!", currclient->socketID);
-						currclient->isWaitingForData = false;
-						sem_post(&currclient->waitForData);
-						break;
-					}
-					printf("ME CHUPA TODO UN HUEVO!!!!\n");
 					//NOS LLEGA UN MENSAJE DE UN CLIENTE!
 					int message_type = -1;
 					int error_code = -1;
+					int message_length = -1;
 					void* data;
 
-					data = SocketCommons_ReceiveData(currclient->socketID, &message_type, &error_code);
+					data = SocketCommons_ReceiveData(currclient->socketID, &message_type, &message_length, &error_code);
 
 					if(data == 0) //recv devolvio 0 o sea nos cerraron el socket.
 					{
@@ -205,19 +197,52 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 						{
 							if(actions.OnClientDisconnect != NULL)
 									actions.OnClientDisconnect(currclient->socketID);
+
+							if(currclient->isWaitingForData)
+							{
+								currclient->arriveData = NULL;
+								currclient->isWaitingForData = false;
+								sem_post(&currclient->waitForData);
+							}
+
+
 							pthread_mutex_lock(&connections_lock);
 							SocketServer_DestroyClient(list_remove(connections, i)); //Lo ultimo que hacemos es el free por si algun otro recurso hace referencia al espacio de memoria del int malloceado que representa al descriptor del socket.
 							pthread_mutex_unlock(&connections_lock);
+
+
 						} else
 						{
+							if(currclient->isWaitingForData)
+							{
+								currclient->arriveData = NULL;
+								currclient->isWaitingForData = false;
+								sem_post(&currclient->waitForData);
+							}
+
 							if(actions.OnReceiveError != NULL)
 								actions.OnReceiveError(currclient->socketID, error_code); //error_code contiene el errno devuelto por el S.O, en el Log (si es que se inicializo) esta pasado a string, y tambien se puede obtener con strerror()
 						}
 					} else
 					{
+						//Si hay algun thread esperando datos en este socketID entonces no tenemos que llamar a OnPacketArrived, le derivamos la informacion al thread que la espera. Hablo en singular porque no tiene sentido que dos threads esten esperando en paralelo datos sobre EL MISMO socket.
+						if(currclient->isWaitingForData)
+						{
+							Logger_Log(LOG_DEBUG, "KEMMENSLIB -> SOCKETSERVER :: Datos recibidos de %d, derivando al thread a la espera de los mismos. OnPacketArrived no sera llamado!", currclient->socketID);
+
+							OnArrivedData* arriveData = SocketServer_CreateOnArrivedData();
+							arriveData->calling_SocketID = currclient->socketID;
+							arriveData->receivedData = data;
+							arriveData->receivedDataLength = message_length;
+
+							currclient->arriveData = arriveData;
+							currclient->isWaitingForData = false;
+							sem_post(&currclient->waitForData);
+							break;
+						}
 						//OJO! Se debe hacer free(data) en la funcion que atienda la llegada del paquete.
 						if(actions.OnPacketArrived != NULL)
-								actions.OnPacketArrived(currclient->socketID,  message_type, data);
+								actions.OnPacketArrived(currclient->socketID,  message_type, data, message_length);
 					}
 
 					break;
@@ -251,6 +276,13 @@ void SocketServer_TerminateAllConnections()
 	void cerrarconexion(void* conn)
 	{
 		ServerClient* client = (ServerClient*)conn;
+
+		if(client->isWaitingForData)
+		{
+			client->arriveData = NULL;
+			client->isWaitingForData = false;
+			sem_post(&client->waitForData);
+		}
 
 		Logger_Log(LOG_INFO, "'%s' -> Cerrando conexion %d ", alias, client->socketID);
 
@@ -318,7 +350,7 @@ OnArrivedData* SocketServer_CreateOnArrivedData()
 }
 
 //Funcion thredeada
-bool SocketServer_WakeMeUpWhenDataIsAvailableOn(int socketToWatch)
+OnArrivedData* SocketServer_WakeMeUpWhenDataIsAvailableOn(int socketToWatch)
 {
 	bool match = false;
 	pthread_mutex_lock(&connections_lock);
@@ -338,25 +370,10 @@ bool SocketServer_WakeMeUpWhenDataIsAvailableOn(int socketToWatch)
 	pthread_mutex_unlock(&connections_lock);
 
 	if(match)
-		sem_wait(&currclient->waitForData);
-
-	return match;
-}
-
-void SocketServer_NotifyClientDisconnect(int disconnectedSocket)
-{
-	pthread_mutex_lock(&connections_lock);
-	int connlistsize = list_size(connections);
-	ServerClient* currclient;
-	for(int i = 0; i < connlistsize; i++)
 	{
-		currclient = (ServerClient*)list_get(connections, i);
-
-		if(currclient->socketID == disconnectedSocket)
-		{
-			SocketServer_DestroyClient(currclient);
-			break;
-		}
+		sem_wait(&currclient->waitForData);
+		return currclient->arriveData;
 	}
-	pthread_mutex_unlock(&connections_lock);
+
+	return NULL;
 }

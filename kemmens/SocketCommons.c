@@ -3,7 +3,7 @@
 #include "stdio.h"
 #include <unistd.h>
 
-ContentHeader* SocketCommons_CreateHeader()
+static ContentHeader* SocketCommons_CreateHeader()
 {
 	return (ContentHeader*)malloc(sizeof(ContentHeader));
 }
@@ -19,7 +19,7 @@ int SocketCommons_SendStringAsContent(int socket, char* string, int content_type
 	return SocketCommons_SendData(socket, content_type, string, leng);
 }
 
-ContentHeader* SocketCommons_ReceiveHeader(int socket, int* error_status)
+static ContentHeader* SocketCommons_ReceiveHeader(int socket, int* error_status)
 {
 	//Creamos el header que nos va a dar el lengh del tamaño de lo que sea que vamos a recibir posteriormente en el "body"
 	ContentHeader * header = SocketCommons_CreateHeader();
@@ -48,7 +48,7 @@ ContentHeader* SocketCommons_ReceiveHeader(int socket, int* error_status)
 	return header;
 }
 
-int SocketCommons_SendHeader(int socket, int length, int message_type)
+static int SocketCommons_SendHeader(int socket, int length, int message_type)
 {
 	ContentHeader * header = SocketCommons_CreateHeader();
 	header->body_length = length;
@@ -63,30 +63,7 @@ int SocketCommons_SendHeader(int socket, int length, int message_type)
 	return status;
 }
 
-void* SocketCommons_ReceiveData(int socket, int* message_type, int* error_status)
-{
-	if(message_type == NULL)
-	{
-		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - se recibio NULL en el parametro int* message_type. Se esperaba una direccion de memoria valida.");
-		return NULL;
-	}
-
-	ContentHeader* header = SocketCommons_ReceiveHeader(socket, error_status);
-
-	if(header == 0)
-		return header;
-
-	int len = header->body_length;
-	//Informamos al usuario de la funcion que es lo que vamos a recibir para que despues puedan castear nuestro void*
-	*message_type = header->message_type;
-	free(header);
-
-	Logger_Log(LOG_DEBUG, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - Recibiendo datos, length: %d, content type: %d", len, *message_type);
-
-	return SocketCommons_ReceiveDataWithoutHeader(socket, len, error_status);
-}
-
-void* SocketCommons_ReceiveDataWithoutHeader(int socket, int expected_size, int* error_status)
+static void* SocketCommons_ReceiveDataWithoutHeader(int socket, int expected_size, int* error_status)
 {
 	void* buffer = malloc(expected_size);
 
@@ -108,6 +85,42 @@ void* SocketCommons_ReceiveDataWithoutHeader(int socket, int expected_size, int*
 	return buffer;
 }
 
+void* SocketCommons_ReceiveData(int socket, int* message_type, int* message_length, int* error_status)
+{
+	if(message_type == NULL)
+	{
+		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - se recibio NULL en el parametro int* message_type. Se esperaba una direccion de memoria valida.");
+		return NULL;
+	}
+
+	ContentHeader* header = SocketCommons_ReceiveHeader(socket, error_status);
+
+	if(header == 0)
+		return header;
+
+	int len = header->body_length;
+	if(message_length != NULL)
+		*message_length = len;
+
+	//Informamos al usuario de la funcion que es lo que vamos a recibir para que despues puedan castear nuestro void*
+	*message_type = header->message_type;
+	free(header);
+
+	Logger_Log(LOG_DEBUG, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - Recibiendo datos, length: %d, content type: %d", len, *message_type);
+
+	return SocketCommons_ReceiveDataWithoutHeader(socket, len, error_status);
+}
+
+static int SocketCommons_SendDataWithoutHeader(int socket, void* data, int dataLength)
+{
+	int status = send(socket, data, dataLength, MSG_WAITALL | MSG_NOSIGNAL);
+
+	if(status < 0)
+		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_SendDataWithoutHeader - Error al enviar data, codigo: %d", status);
+
+	return status;
+}
+
 int SocketCommons_SendData(int socket, int message_type, void* data, int dataLength)
 {
 	int status = SocketCommons_SendHeader(socket, dataLength, message_type);
@@ -116,16 +129,6 @@ int SocketCommons_SendData(int socket, int message_type, void* data, int dataLen
 		return -2;
 
 	return SocketCommons_SendDataWithoutHeader(socket, data, dataLength);
-}
-
-int SocketCommons_SendDataWithoutHeader(int socket, void* data, int dataLength)
-{
-	int status = send(socket, data, dataLength, MSG_WAITALL | MSG_NOSIGNAL);
-
-	if(status < 0)
-		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_SendDataWithoutHeader - Error al enviar data, codigo: %d", status);
-
-	return status;
 }
 
 void SocketCommons_CloseSocket(int socketFD)
