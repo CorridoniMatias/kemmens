@@ -35,8 +35,9 @@ void* postDo(char* cmd, char* sep, void* args, bool fired)
  return 0;
 }
 
-void onPacketArrived(int socketID, int message_type, void* data)
+void onPacketArrived(int socketID, int message_type, void* data, int message_length)
 {
+	printf("---> %d bytes recibidos\n", message_length );
 	if(message_type == MESSAGETYPE_STRING)
 	{
 		printf("STRING RECIBIDO: %s\n", ((char*)data) );
