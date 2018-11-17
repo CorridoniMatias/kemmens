@@ -1,6 +1,6 @@
 #include "kemmens/Serialization.h"
 
-void* Serialization_Serialize(int fieldCount, ...)
+SerializedPart* Serialization_Serialize(int fieldCount, ...)
 {
 	if(fieldCount < 1)
 		return 0;
@@ -42,11 +42,17 @@ void* Serialization_Serialize(int fieldCount, ...)
 
 	va_end(arguments);
 
-	return packet;
+	SerializedPart* ret = (SerializedPart*)malloc(sizeof(SerializedPart));
+
+	ret->data = packet;
+	ret->size = totalsize;
+
+	return ret;
 }
 
-void Serialization_Deserialize(void* serializedPacket, DeserializedData* dest)
+DeserializedData* Serialization_Deserialize(void* serializedPacket)
 {
+	DeserializedData* dest = (DeserializedData*)malloc(sizeof(DeserializedData));
 
 	size_t partSizeLength = sizeof(uint32_t);			//Tamanio de los bloques de tamanio
 	uint32_t partSize;									//Tamanio de la siguiente parte a leer
@@ -56,7 +62,8 @@ void Serialization_Deserialize(void* serializedPacket, DeserializedData* dest)
 	int requiredSize = 0;								//Tamanio total que requerira el void** de dest, para reallocar
 
 	//Copio el primer tamanio del packet (los primeros 4 bytes) y actualizo contadores
-	memcpy(&partSize, serializedPacket + packOffset, partSizeLength);
+	memcpy(&partSize, serializedPacket, partSizeLength);
+
 	packOffset += partSizeLength;
 	requiredSize += partSize;
 
@@ -66,8 +73,10 @@ void Serialization_Deserialize(void* serializedPacket, DeserializedData* dest)
 	//Solo ejecuto todo esto si el tamanio del proximo bloque es mayor a 0; un 0 indicaria que no hay mas partes a leer
 	while(partSize > 0)
 	{
+		//Reasigno memoria dest (tener en cuenta count), a su void**, y
+		//asigno memoria al elemento de ese array donde voy a guardar
+		//dest = realloc(dest, requiredSize + sizeof(int));
 
-		//Reasigno memoria al void** de dest, y asigno memoria al elemento de ese array donde voy a guardar
 		dest->parts = realloc(dest->parts, requiredSize);
 		dest->parts[partsCount] = malloc(partSize);
 
@@ -82,15 +91,42 @@ void Serialization_Deserialize(void* serializedPacket, DeserializedData* dest)
 
 	}
 
-	if(partsCount == 0)
-	{
-			return;
-	}
-
 	//Grabo la cantidad de partes leidas en el struct
 	dest->count = partsCount;
+
+	return dest;
+}
+
+void Serialization_ShowDeserializedParts(DeserializedData* showable)
+{
+
+	int i;
+	int amount = showable->count;
+
+	for(i = 0; i < amount; i++)
+	{
+		printf("Parte %d: %s\n", i + 1, (char*) showable->parts[i]);
+	}
 
 	return;
 
 }
 
+void Serialization_CleanupDeserializationStruct(DeserializedData* cleanable)
+{
+
+	int i;
+	int amount = cleanable->count;
+
+	//Primero, libero la memoria reservada por todas sus partes, una por una
+	for(i = 0; i < amount; i++)
+	{
+		free(cleanable->parts[i]);
+	}
+
+	free(cleanable->parts);				//Libero la memoria reservada por el array de partes en si
+	free(cleanable);					//Libero la memoria reservada por el struct en si
+
+	return;
+
+}

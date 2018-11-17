@@ -112,10 +112,13 @@ typedef struct {
  *		char* i2 = (char*)malloc(6);
  *		strcpy(i2, "hola!");
  *
+ *
  *		SerializedPart p1 = {.size = 4, .data = i1};
  *		SerializedPart p2 = {.size = strlen(i2)+1, .data = i2};
  *
- *		void* packet = Serialization_Serialize(2, p1, p2);
+ *		SerializedPart* packet = Serialization_Serialize(2, p1, p2);
+ *
+ *		VALOR DE RETORNO: packet contiene la longitud del paquete serializado en el campo packet->size, y el paquete propiamente dicho en packet->data
  *
  * 		El paquete serializado posee la siguiente estructura:
  *
@@ -128,7 +131,7 @@ typedef struct {
  * 		Los paquetes SIEMPRE finalizan con un 0 a modo de determinar cuando se terminan de grabar datos.
  *
  */
-void* Serialization_Serialize(int fieldCount, ...);
+SerializedPart* Serialization_Serialize(int fieldCount, ...);
 
 /*
  * 	ACCION: Deserializa un paquete serializado y guarda sus partes en una estructura, junto con la cantidad de las mismas
@@ -138,7 +141,7 @@ void* Serialization_Serialize(int fieldCount, ...);
  *
  * 	NOTA: Por algun motivo, copia mal los ints; revisar esto: REVISADO -> hay que hacer un *((int*)data) para obtener el valor ya que el dato es guardado en un void* !
  */
-void Serialization_Deserialize(void* serializedPacket, DeserializedData* dest);
+DeserializedData* Serialization_Deserialize(void* serializedPacket);
 
 /*
  * 	ACCION: Recorrer todas las partes de una estructura de deserializacion e imprimirlas; PARA DEBUGGEAR
