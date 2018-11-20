@@ -65,21 +65,26 @@ static int SocketCommons_SendHeader(int socket, int length, int message_type)
 
 static void* SocketCommons_ReceiveDataWithoutHeader(int socket, int expected_size, int* error_status)
 {
-	void* buffer = malloc(expected_size);
+	void* buffer = NULL;
 
-	int status = recv(socket, buffer, expected_size, MSG_WAITALL);
-
-	if(status < 1)
+	if(expected_size > 0)
 	{
-		if(error_status != NULL)
-		{
-			*error_status = errno;
-			Logger_Log(LOG_DEBUG, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - Return recv: %d, errno: %d, error: %s", status, *error_status, strerror(*error_status));
-		}
+		buffer = malloc(expected_size);
 
-		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveDataWithoutHeader - Error al recibir datos!");
-		free(buffer);
-		return 0;
+		int status = recv(socket, buffer, expected_size, MSG_WAITALL);
+
+		if(status < 1)
+		{
+			if(error_status != NULL)
+			{
+				*error_status = errno;
+				Logger_Log(LOG_DEBUG, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - Return recv: %d, errno: %d, error: %s", status, *error_status, strerror(*error_status));
+			}
+
+			Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveDataWithoutHeader - Error al recibir datos!");
+			free(buffer);
+			return 0;
+		}
 	}
 
 	return buffer;
