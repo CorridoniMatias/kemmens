@@ -159,4 +159,10 @@ void Serialization_ShowDeserializedParts(DeserializedData* showable);
  */
 void Serialization_CleanupDeserializationStruct(DeserializedData* cleanable);
 
+
+/*
+ * 		Libera la memoria asignada en el momento de creacion de un paquete (Serialization_Serialize)
+ */
+void Serialization_CleanupSerializedPacket(SerializedPart* serializedPacket);
+
 #endif /* KEMMENS_SERIALIZATION_H_ */

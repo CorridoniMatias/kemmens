@@ -9,7 +9,7 @@ unsigned char* KemmensUtils_md5(void* content)
 	MD5_Update(&context, content, strlen(content) + 1);
 	MD5_Final(digest, &context);
 
-	return digest;
+	return (char*)digest;
 }
 
 void dictionary_putMAESTRO(t_dictionary* dictionary, char* key, void* value, void (*elementDestroyer)(void*))
