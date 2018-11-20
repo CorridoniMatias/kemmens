@@ -24,5 +24,6 @@ void archivoConfigSetearCampo(t_config* archivoConfig, char* campo, char* valor)
 bool archivoConfigInvalido(t_config* archivoConfig, char** campos);
 bool archivoConfigInexistente(t_config* archivoConfig);
 bool archivoConfigIncompleto(t_config* archivoConfig, char** campos);
+void archivoConfigEsInvalido();
 
 #endif /* CONFIGKEMMENS_H_ */

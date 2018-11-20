@@ -8,8 +8,7 @@ t_config* archivoConfigCrear(char* path, char** campos) {
 	t_config* archivoConfig = config_create(path);
 	if(archivoConfigInvalido(archivoConfig, campos))
 	{
-		puts("Archivo de configuracion invalido\n");
-		exit(EXIT_FAILURE);
+		archivoConfigEsInvalido();
 	}
 	return archivoConfig;
 
@@ -115,13 +114,19 @@ bool archivoConfigInexistente(t_config* archivoConfig) {
 bool archivoConfigIncompleto(t_config* archivoConfig, char** campos) {
 
 	int indice;
-	for(indice = 0; indice < archivoConfigCantidadCampos(archivoConfig); indice++)
-	{
-		if(archivoConfigFaltaCampo(archivoConfig, campos[indice]))
-		{
+	int cantCampos = StringUtils_ArraySize(campos);
+	for (indice = 0; indice < cantCampos; indice++) {
+
+		if (!archivoConfigTieneCampo(archivoConfig, campos[indice])) {
 			return true;
 		}
+
 	}
 	return false;
+}
+
+void archivoConfigEsInvalido() {
+	Logger_Log(LOG_DEBUG, "Archivo de configuracion invalido\n");
+	exit(EXIT_FAILURE);
 }
 //---------------------------------------------
