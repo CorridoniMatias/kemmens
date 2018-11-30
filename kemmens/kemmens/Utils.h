@@ -9,7 +9,6 @@
 		*pointer_name = init_value;															\
 
 
-unsigned char* KemmensUtils_md5(void* content);
 
 /*
  * 	ACCION: Poner un key-value en un diccionario y si ya existia la key borrar el
