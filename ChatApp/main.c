@@ -37,7 +37,7 @@ void* postDo(char* cmd, char* sep, void* args, bool fired)
 
 void onPacketArrived(int socketID, int message_type, void* data, int message_length)
 {
-	printf("---> %d bytes recibidos\n", message_length );
+	printf("--->s %d bytes recibidos\n", message_length );
 	if(message_type == MESSAGETYPE_STRING)
 	{
 		printf("STRING RECIBIDO: %s\n", ((char*)data) );
@@ -437,7 +437,7 @@ void TestDeserialization()
 
 	DeserializedData arr;
 
-	Serialization_Deserialize(packet, &arr);
+	//Serialization_Deserialize(packet, &arr);
 
 	printf("FieldCount: %d\n", arr.count);
 	printf("First field: %d\n", *((int*) arr.parts[0]));

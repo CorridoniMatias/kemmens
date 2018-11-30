@@ -62,6 +62,7 @@ struct
 {
 	int calling_SocketID;
 	int receivedDataLength;
+	int message_type;
 	void* receivedData;
 } typedef OnArrivedData;
 
@@ -108,11 +109,10 @@ void SocketServer_TerminateAllConnections();
 void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions);
 
 /**
- * 		ACCION: Crea el servidor, definiendo el socket y bindeandolo a la conexion especificada
+ * 		ACCION: Crea el servidor, definiendo el socket y bindeandolo al puerto especificado
  * 		PARAMETROS:
  * 			name: Nombre del servidor, en forma de cadena (no mas de 4 caracteres)
  * 			port: Puerto a traves del cual quiero escuchar
- * 			ip: Ip del servidor que queremos iniciar
  */
 void SocketServer_Start(char name[5],int port);
 
@@ -140,6 +140,13 @@ bool SocketServer_IsClientConnected(int socket);
 OnArrivedData* SocketServer_CreateOnArrivedData();
 
 /*
+ * 		Libera correctamente la memoria ocupada por un OnArrivedData, haciendo free del receivedData
+ * 		y del OnArrivedData.
+ */
+
+void SocketServer_CleanOnArrivedData(OnArrivedData* data);
+
+/*
  * 		!!!! Funcion a ser llamada por un thread DISTINTO al que esta corriendo el server (donde se llamo a listenForConnections) !!!!
  *
  * 		Le indica al Server que cuando haya datos disponibles en el socket 'socketToWatch' no haga el flujo normal de llamar a OnPacketReceived()
@@ -150,9 +157,13 @@ OnArrivedData* SocketServer_CreateOnArrivedData();
  * 		Si el valor retornado es NULL, entonces puede ser que haya habido un error al recibir (ver OnReceiveError),
  * 			el cliente se desconecto (OnClientDisconnect) o que el socket que se pidio vigilar no esta en la lista de clientes.
  *
- * 		IMPORTANTE: Hacer free de la data recibida y de la estructura cuando se termina de usar!
+ * 		!! IMPORTANTE:
  *
- * 		SOLAMENTE DEBE SER LLAMARA POR UN HILO A LA VEZ!
+ * 			- Hacer free de la data recibida y de la estructura cuando se termina de usar!
+ *
+ *			- NO LLAMAR DESDE EL MISMO HILO QUE SE HIZO SocketServer_ListenForConnection!
+ *
+ * 			- SOLAMENTE DEBE SER LLAMARA POR UN HILO A LA VEZ!
  */
 OnArrivedData* SocketServer_WakeMeUpWhenDataIsAvailableOn(int socketToWatch);
 

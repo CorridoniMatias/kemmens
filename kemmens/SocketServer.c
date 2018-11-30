@@ -191,7 +191,8 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 
 					data = SocketCommons_ReceiveData(currclient->socketID, &message_type, &message_length, &error_code);
 
-					if(data == 0) //recv devolvio 0 o sea nos cerraron el socket.
+					// hay algun error, esto es porque message_length va a ser distinto de 0 (en general -1) y data es null
+					if(data == NULL && message_length != 0)
 					{
 						if(error_code == 0)
 						{
@@ -223,17 +224,19 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 							if(actions.OnReceiveError != NULL)
 								actions.OnReceiveError(currclient->socketID, error_code); //error_code contiene el errno devuelto por el S.O, en el Log (si es que se inicializo) esta pasado a string, y tambien se puede obtener con strerror()
 						}
-					} else
+					} else // Llego algo que es de importancia. Si message_length == 0 -> data es NULL
 					{
 						//Si hay algun thread esperando datos en este socketID entonces no tenemos que llamar a OnPacketArrived, le derivamos la informacion al thread que la espera. Hablo en singular porque no tiene sentido que dos threads esten esperando en paralelo datos sobre EL MISMO socket.
 						if(currclient->isWaitingForData)
 						{
 							Logger_Log(LOG_DEBUG, "KEMMENSLIB -> SOCKETSERVER :: Datos recibidos de %d, derivando al thread a la espera de los mismos. OnPacketArrived no sera llamado!", currclient->socketID);
 
+
 							OnArrivedData* arriveData = SocketServer_CreateOnArrivedData();
 							arriveData->calling_SocketID = currclient->socketID;
 							arriveData->receivedData = data;
 							arriveData->receivedDataLength = message_length;
+							arriveData->message_type = message_type;
 
 							currclient->arriveData = arriveData;
 							currclient->isWaitingForData = false;
@@ -349,7 +352,15 @@ OnArrivedData* SocketServer_CreateOnArrivedData()
 	return (OnArrivedData*)malloc(sizeof(OnArrivedData));
 }
 
-//Funcion thredeada
+void SocketServer_CleanOnArrivedData(OnArrivedData* data){
+	if(data->receivedData != NULL)
+		free(data->receivedData);
+	free(data);
+}
+
+///////// THREAD INTENDED FUNCTIONS ////////////
+
+//Funcion THREAD-SAFE y THREAD-INTENDED
 OnArrivedData* SocketServer_WakeMeUpWhenDataIsAvailableOn(int socketToWatch)
 {
 	bool match = false;

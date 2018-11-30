@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <commons/config.h>
+#include "StringUtils.h"
+#include "logger.h"
 
 
 //Funciones de archivos de configuracion
