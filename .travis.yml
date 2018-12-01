@@ -8,7 +8,7 @@ before_install:
 install: sudo make install
 
 before_script:
-       - cd kemmens/Debug
+       - cd ../kemmens/Debug
 
 script: make all
 
