@@ -1,14 +1,14 @@
 language: c
 compiler: gcc
 
-before_script:
+before_install:
         - git clone https://github.com/sisoputnfrba/so-commons-library.git
-	- cd so-commons-library
+        - cd so-commons-library
 
 install: sudo make install
 
 before_script:
-	- cd kemmens/Debug
+       - cd kemmens/Debug
 
 script: make all
 
