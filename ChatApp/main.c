@@ -11,6 +11,7 @@
 #include "kemmens/ThreadPool.h"
 #include "kemmens/Serialization.h"
 #include "kemmens/StringUtils.h"
+#include "kemmens/Utils.h"
 #include <unistd.h>
 
 bool recibir = true;
@@ -419,11 +420,13 @@ void TestSerialization()
 
 void TestDeserialization()
 {
+	declare_and_init(i1, int, 114)
 
-	int* i1 = (int*)malloc(4);
-	*i1 = 114;
 	char* i2 = (char*)malloc(6);
 	strcpy(i2, "hola!");
+	declare_and_init(i3, int, 114)
+	declare_and_init(i4, int, 115)
+	declare_and_init(i5, int, 116)
 	/*i2 = 2;
 	int* i3 = (int*)malloc(4);
 	*i3 = 3;
@@ -432,16 +435,26 @@ void TestDeserialization()
 
 	SerializedPart p1 = {.size = 4, .data = i1};
 	SerializedPart p2 = {.size = 6, .data = i2};
+	SerializedPart p3 = {.size = 4, .data = i3};
+	SerializedPart p4 = {.size = 4, .data = i4};
+	SerializedPart p5 = {.size = 4, .data = i5};
 
-	void* packet = Serialization_Serialize(2, p1, p2);
+	SerializedPart* packet = Serialization_Serialize(5, p1, p2,p3,p4,p5);
+	DeserializedData* arr = Serialization_Deserialize(packet->data);
+	Serialization_CleanupSerializedPacket(packet);
 
-	DeserializedData arr;
-
-	//Serialization_Deserialize(packet, &arr);
-
-	printf("FieldCount: %d\n", arr.count);
-	printf("First field: %d\n", *((int*) arr.parts[0]));
-	printf("Second field: %s\n", (char*) arr.parts[1]);
+	printf("FieldCount: %d\n", arr->count);
+	printf("First field: %d\n", *((int*) arr->parts[0]));
+	printf("Second field: %s\n", (char*) arr->parts[1]);
+	printf("Third field: %d\n", *((int*) arr->parts[2]));
+	printf("Fourth field: %d\n", *((int*) arr->parts[3]));
+	printf("Fifth field: %d\n", *((int*) arr->parts[4]));
+	Serialization_CleanupDeserializationStruct(arr);
+	free(i1);
+	free(i2);
+	free(i3);
+	free(i4);
+	free(i5);
 }
 
 int main(int argc, char **argv)
@@ -449,8 +462,8 @@ int main(int argc, char **argv)
 	//ProbarCommandInterpreter();
 	//ThreadPoolFunc();
 	//TestSerialization();
-	//TestDeserialization();
-
+	TestDeserialization();
+	return 0;
 	Logger_CreateLog("./chatapp.log", "CHARAPP", true);
 
 
