@@ -121,6 +121,9 @@ void* SocketCommons_ReceiveData(int socket, int* message_type, int* message_leng
 
 static int SocketCommons_SendDataWithoutHeader(int socket, void* data, int dataLength)
 {
+	if (data == NULL || dataLength == 0)
+		return 0;
+
 	int status = send(socket, data, dataLength, MSG_WAITALL | MSG_NOSIGNAL);
 
 	if(status < 0)
