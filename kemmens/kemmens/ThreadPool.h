@@ -8,10 +8,13 @@
 /**
  * 		Estructura que representa un job o trabajo a depositar en el pool
  * 		CAMPOS:
- * 			should_free_data: Flag que nos indica si deberiamos hacer un free(data) en caso que se llame a la funcion para
- * 							  limpiar todos los jobs, esto es porque si lo que esta en data no es algo del heap -> seg fault
+ * 			free_data: Funcion que nos indica como deberiamos hacer un free(data) en caso que se llame a la funcion
+ * 			           para limpiar todos los trabajos del thread pool y este todavia no haya ejecutado,
+ * 			           esto es porque si lo que esta en data no es algo del heap -> seg fault.
+	                   En caso que free_data != NULL => se va a ejecutar esta funcion para liberar data.
+	                   De lo contrario no se hace nada
  * 			data: Datos del trabajo, seran tomados como parametros por la funcion
- * 			runable: Funcion a ejecutar al llevar a cabo el trabajo; recibe por parametro un cierto argumento
+ * 			runnable: Funcion a ejecutar al llevar a cabo el trabajo; recibe por parametro un cierto argumento
  */
 struct ThreadPool_func_s
 {
