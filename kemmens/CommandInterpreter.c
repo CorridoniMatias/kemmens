@@ -24,7 +24,11 @@ void CommandInterpreter_RegisterCommand(char* command, void (*runner)(int argC, 
 {
 	if(interpreters == NULL)
 	{
+		#ifdef KEMMENS_ENABLE_LOGGING
+		#ifdef CI_ENABLE_LOGGING
 		Logger_Log(LOG_ERROR, "KEMMENSLIB - CommandInterpreter::CommandInterpreter_Do -> No se llamo al metodo CommandInterpreter_Init(...)!!");
+		#endif
+		#endif
 		return;
 	}
 
@@ -48,7 +52,11 @@ bool CommandInterpreter_DeRegisterCommand(char* command)
 {
 	if(interpreters == NULL)
 	{
+		#ifdef KEMMENS_ENABLE_LOGGING
+		#ifdef CI_ENABLE_LOGGING
 		Logger_Log(LOG_ERROR, "KEMMENSLIB - CommandInterpreter::CommandInterpreter_Do -> No se llamo al metodo CommandInterpreter_Init(...)!!");
+		#endif
+		#endif
 		return false;
 	}
 
@@ -71,7 +79,7 @@ bool CommandInterpreter_DeRegisterCommand(char* command)
 	return false;
 }
 
-void* CommandInterpreter_DoThreaded(void* arg)
+void* CommandInterpreter_DoThreaded(void* arg) //Thread-intended function
 {
 	ThreadableDoStructure* args = (ThreadableDoStructure*)arg;
 
@@ -97,7 +105,11 @@ bool CommandInterpreter_Do(char* command, char* separator, void* extraData)
 {
 	if(interpreters == NULL)
 	{
+		#ifdef KEMMENS_ENABLE_LOGGING
+		#ifdef CI_ENABLE_LOGGING
 		Logger_Log(LOG_ERROR, "KEMMENSLIB - CommandInterpreter::CommandInterpreter_Do -> No se llamo al metodo CommandInterpreter_Init(...)!!");
+		#endif
+		#endif
 		return false;
 	}
 
@@ -152,9 +164,11 @@ void CommandInterpreter_Destroy()
 	void deregistercommands(void* cmd)
 	{
 		CommandRunnerStructure* com = (CommandRunnerStructure*)cmd;
-
+		#ifdef KEMMENS_ENABLE_LOGGING
+		#ifdef CI_ENABLE_LOGGING
 		Logger_Log(LOG_INFO, "KEMMENSLIB - CommandInterpreter::CommandInterpreter_Destroy -> Eliminando comando '%s'", com->command);
-
+		#endif
+		#endif
 		free(com->command);
 	}
 

@@ -154,6 +154,8 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 
 			if(max_fd < connected_socket)
 				max_fd = connected_socket; //hay que actualizar el maximo valor por el cual va a escuchar el select, sino nunca va a escuchar el nuevo socket!
+
+			continue;
 		}
 		else
 		{

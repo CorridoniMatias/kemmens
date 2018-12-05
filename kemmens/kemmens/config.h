@@ -10,6 +10,9 @@
 #include "logger.h"
 #include "StringUtils.h"
 
+//Para deshabilitar el logueo interno de este modulo de las kemmens comentar la siguiente linea:
+#define CONFIG_ENABLE_LOGGING
+
 /**
  * 		ACCION: Crea un archivo de configuracion en cierta ruta y con ciertos campos
  * 		PARAMETROS:

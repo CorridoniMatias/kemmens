@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+//Para deshabilitar el logueo interno de este modulo de las kemmens comentar la siguiente linea:
+#define SERIALIZATION_ENABLE_LOGGING
+
 //------ESTRUCTURAS EMPLEADAS------//
 
 struct

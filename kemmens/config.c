@@ -65,22 +65,8 @@ void archivoConfigSetearCampo(t_config* archivoConfig, char* campo, char* valor)
 }
 
 bool archivoConfigInvalido(t_config* archivoConfig, char** campos) {
-
-	if(archivoConfigInexistente(archivoConfig))
-	{
-		printf("Ruta invalida\n");
-		return true;
-	}
-	else if(archivoConfigIncompleto(archivoConfig, campos))
-	{
-		printf("Faltan campos\n");
-		return true;
-	}
-
-	return false;
-
-	/*return (archivoConfigInexistente(archivoConfig)
-			|| archivoConfigIncompleto(archivoConfig, campos));*/
+	return (archivoConfigInexistente(archivoConfig)
+			|| archivoConfigIncompleto(archivoConfig, campos));
 }
 
 bool archivoConfigInexistente(t_config* archivoConfig) {
@@ -104,6 +90,10 @@ bool archivoConfigIncompleto(t_config* archivoConfig, char** campos) {
 }
 
 void archivoConfigEsInvalido() {
-	Logger_Log(LOG_DEBUG, "Archivo de configuracion invalido\n");
+	#ifdef KEMMENS_ENABLE_LOGGING
+	#ifdef CONFIG_ENABLE_LOGGING
+	Logger_Log(LOG_DEBUG, "KEMMENS::Config -> Archivo de configuracion invalido\n");
+	#endif
+	#endif
 	exit(EXIT_FAILURE);
 }

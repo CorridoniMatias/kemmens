@@ -9,6 +9,9 @@
 #include <semaphore.h>
 #include <pthread.h>
 
+//Para deshabilitar el logueo interno de este modulo de las kemmens comentar la siguiente linea:
+#define SSER_ENABLE_LOGGING
+
 #define MAXWAITCONNECTIONS 10
 
 #define INIT_ACTION_LISTENER {0}

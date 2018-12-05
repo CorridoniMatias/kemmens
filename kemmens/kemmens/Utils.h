@@ -15,6 +15,9 @@
 #include "commons/collections/queue.h"
 #include "StringUtils.h"
 
+//Para deshabilitar el logueo interno de este modulo de las kemmens comentar la siguiente linea:
+#define UTILS_ENABLE_LOGGING
+
 //Define un puntero con el tipo de datos indicado y el valor inicial provisto. NO SIRVE PARA char*
 #define declare_and_init(pointer_name, data_type, init_value) 								\
 		data_type* pointer_name = (data_type*)malloc(sizeof(data_type)); 					\

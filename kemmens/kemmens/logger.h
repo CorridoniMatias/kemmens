@@ -9,6 +9,9 @@
 #define LOG_INFO (void*)log_info
 #define LOG_DEBUG (void*)log_debug
 
+//Para deshabilitar el logueo interno de todos los modulos de las kemmens comentar la siguiente linea:
+#define KEMMENS_ENABLE_LOGGING
+
 /*
  * 		Obtiene el puntero al log.
  */
