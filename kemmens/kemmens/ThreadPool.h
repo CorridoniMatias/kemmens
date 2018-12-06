@@ -5,8 +5,9 @@
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
 
-//Para deshabilitar el logueo interno de este modulo de las kemmens comentar la siguiente linea:
-#define THREADPOOL_ENABLE_LOGGING
+//Para deshabilitar el logueo interno de este modulo de las kemmens descomentar la siguiente linea:
+//#define THREADPOOL_DISABLE_LOGGING
+
 
 /**
  * 		Estructura que representa un job o trabajo a depositar en el pool

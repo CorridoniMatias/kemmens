@@ -10,8 +10,12 @@
 #include <sys/socket.h> // Para crear sockets, enviar, recibir, etc
 #include <netdb.h> // Para getaddrinfo
 
-//Para deshabilitar el logueo interno de este modulo de las kemmens comentar la siguiente linea:
-#define SCOM_ENABLE_LOGGING
+#include <errno.h>
+#include "stdio.h"
+#include <unistd.h>
+
+//Para deshabilitar el logueo interno de este modulo de las kemmens descomentar la siguiente linea:
+//#define SOCKETCOMMONS_DISABLE_LOGGING
 
 /**
  * 		Estructura que representa el encabezado de un mensaje, para ser interpretada segun el protocolo

@@ -24,8 +24,8 @@ void CommandInterpreter_RegisterCommand(char* command, void (*runner)(int argC, 
 {
 	if(interpreters == NULL)
 	{
-		#ifdef KEMMENS_ENABLE_LOGGING
-		#ifdef CI_ENABLE_LOGGING
+		#ifndef KEMMENS_DISABLE_LOGGING
+		#ifndef COMMANDINTERPRETER_DISABLE_LOGGING
 		Logger_Log(LOG_ERROR, "KEMMENSLIB - CommandInterpreter::CommandInterpreter_Do -> No se llamo al metodo CommandInterpreter_Init(...)!!");
 		#endif
 		#endif
@@ -52,11 +52,7 @@ bool CommandInterpreter_DeRegisterCommand(char* command)
 {
 	if(interpreters == NULL)
 	{
-		#ifdef KEMMENS_ENABLE_LOGGING
-		#ifdef CI_ENABLE_LOGGING
-		Logger_Log(LOG_ERROR, "KEMMENSLIB - CommandInterpreter::CommandInterpreter_Do -> No se llamo al metodo CommandInterpreter_Init(...)!!");
-		#endif
-		#endif
+		Logger_Log(LOG_ERROR, "KEMMENSLIB - CommandInterpreter::CommandInterpreter_Do -> No se llamo al metodo CommandInterpreter_Init(...)! No se puede llamar a Do().");
 		return false;
 	}
 
@@ -105,11 +101,7 @@ bool CommandInterpreter_Do(char* command, char* separator, void* extraData)
 {
 	if(interpreters == NULL)
 	{
-		#ifdef KEMMENS_ENABLE_LOGGING
-		#ifdef CI_ENABLE_LOGGING
-		Logger_Log(LOG_ERROR, "KEMMENSLIB - CommandInterpreter::CommandInterpreter_Do -> No se llamo al metodo CommandInterpreter_Init(...)!!");
-		#endif
-		#endif
+		Logger_Log(LOG_ERROR, "KEMMENSLIB - CommandInterpreter::CommandInterpreter_Do -> No se llamo al metodo CommandInterpreter_Init(...)! No se puede llamar al DO().");
 		return false;
 	}
 
@@ -164,8 +156,8 @@ void CommandInterpreter_Destroy()
 	void deregistercommands(void* cmd)
 	{
 		CommandRunnerStructure* com = (CommandRunnerStructure*)cmd;
-		#ifdef KEMMENS_ENABLE_LOGGING
-		#ifdef CI_ENABLE_LOGGING
+		#ifndef KEMMENS_DISABLE_LOGGING
+		#ifndef COMMANDINTERPRETER_DISABLE_LOGGING
 		Logger_Log(LOG_INFO, "KEMMENSLIB - CommandInterpreter::CommandInterpreter_Destroy -> Eliminando comando '%s'", com->command);
 		#endif
 		#endif

@@ -196,7 +196,7 @@ void* ClientManageReceptions(void* socket)
 void Client(char* texto)
 {
 	printf("Conectando al server...\n");
-	int sock = SocketClient_ConnectToServer("8086");
+	int sock = SocketClient_ConnectToServerIP("127.0.0.1", "8086");
 	printf("Socket asignado %d\n", sock);
 	int m;
 	pthread_t threadRecv;
@@ -255,7 +255,7 @@ void Client(char* texto)
 void* ClientServer(void* port)
 {
 	printf("Conectando al server...\n");
-	int sock = SocketClient_ConnectToServer( ((char*)port) );
+	int sock = SocketClient_ConnectToServerIP("127.0.0.1", ((char*)port) );
 	printf("Socket asignado %d\n", sock);
 	int m;
 	char* asd = (char*)malloc(1);
@@ -462,8 +462,7 @@ int main(int argc, char **argv)
 	//ProbarCommandInterpreter();
 	//ThreadPoolFunc();
 	//TestSerialization();
-	TestDeserialization();
-	return 0;
+	//TestDeserialization();
 	Logger_CreateLog("./chatapp.log", "CHARAPP", true);
 
 

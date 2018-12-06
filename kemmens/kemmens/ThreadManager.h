@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include "logger.h"
 
-//Para deshabilitar el logueo interno de este modulo de las kemmens comentar la siguiente linea:
-#define TM_ENABLE_LOGGING
+//Para deshabilitar el logueo interno de este modulo de las kemmens descomentar la siguiente linea:
+//#define THREADMANAGER_DISABLE_LOGGING
 
 /*	Mallocea un pthread_t.
  *

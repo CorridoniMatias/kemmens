@@ -9,9 +9,12 @@ int ThreadManager_CreateThread(pthread_t* thread, void *(*startingPoint) (void *
 {
 	int status = pthread_create(thread, NULL, (void*) startingPoint, (void*) argument);
 
+	#ifndef KEMMENS_DISABLE_LOGGING
+	#ifndef THREADMANAGER_DISABLE_LOGGING
 	if(status != 0)
 		Logger_Log(LOG_ERROR, "KEMMENSLIB::THREADMANAGER->CREATETHREAD - Error al crear thread. Status = '%d'", status);
-
+	#endif
+	#endif
 	return status;
 }
 
@@ -24,8 +27,12 @@ int ThreadManager_CreateDetachedThread(pthread_t* thread, void *(*startingPoint)
 	int status = pthread_create(thread, &attr, startingPoint, argument);
 	pthread_attr_destroy(&attr);
 
+	#ifndef KEMMENS_DISABLE_LOGGING
+	#ifndef THREADMANAGER_DISABLE_LOGGING
 	if(status != 0)
 		Logger_Log(LOG_ERROR, "KEMMENSLIB::THREADMANAGER->CREATEDETACHEDTHREAD - Error al crear detached thread. Status = '%d'", status);
+	#endif
+	#endif
 
 	return status;
 }

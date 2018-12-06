@@ -3,10 +3,13 @@
 static void* ThreadPool_BasicOperation(void* ownerPool)
 {
 	ThreadPool* owner = (ThreadPool*)ownerPool;
+
+	#ifndef KEMMENS_DISABLE_LOGGING
+	#ifndef THREADPOOL_DISABLE_LOGGING
 	pthread_t this = pthread_self();
-
-	Logger_Log(LOG_DEBUG, "Thread %p Registering", &this);
-
+	Logger_Log(LOG_DEBUG, "KEMMENSLIB::ThreadPool->Thread %p Registering", &this);
+	#endif
+	#endif
 	while(!owner->terminate_all)
 	{
 		pthread_mutex_lock(&owner->lock);
@@ -24,7 +27,11 @@ static void* ThreadPool_BasicOperation(void* ownerPool)
 		{
 			ThreadPoolRunnable* run = queue_pop(owner->jobs);
 			owner->free_threads--;
-			Logger_Log(LOG_DEBUG, "Thread %p orking on job... Pool job queue count: %d. Free threads: %d", &this, queue_size(owner->jobs), owner->free_threads);
+			#ifndef KEMMENS_DISABLE_LOGGING
+			#ifndef THREADPOOL_DISABLE_LOGGING
+			Logger_Log(LOG_DEBUG, "KEMMENSLIB::ThreadPool->Thread %p working on job... Pool job queue count: %d. Free threads: %d", &this, queue_size(owner->jobs), owner->free_threads);
+			#endif
+			#endif
 			pthread_mutex_unlock(&owner->lock);
 
 			run->runnable(run->data); //adentro de runnable se tiene que liberar la data! Responsabilidad del usuario!
@@ -34,13 +41,21 @@ static void* ThreadPool_BasicOperation(void* ownerPool)
 			owner->free_threads++;
 			pthread_mutex_unlock(&owner->lock);
 
-			Logger_Log(LOG_DEBUG, "Thread %p Finished, free threads: %d", &this, owner->free_threads+1);
+			#ifndef KEMMENS_DISABLE_LOGGING
+			#ifndef THREADPOOL_DISABLE_LOGGING
+			Logger_Log(LOG_DEBUG, "KEMMENSLIB::ThreadPool->Thread %p Finished, free threads: %d", &this, owner->free_threads+1);
+			#endif
+			#endif
 			continue;
 		}
 
 		pthread_mutex_unlock(&owner->lock);
 	}
-	Logger_Log(LOG_DEBUG, "Thread %p EXITING!", &this);
+	#ifndef KEMMENS_DISABLE_LOGGING
+	#ifndef THREADPOOL_DISABLE_LOGGING
+	Logger_Log(LOG_DEBUG, "KEMMENSLIB::ThreadPool->Thread %p EXITING!", &this);
+	#endif
+	#endif
 	pthread_exit(0);
 	return 0;
 }
@@ -95,8 +110,11 @@ void ThreadPool_AddJob(ThreadPool* pool, ThreadPoolRunnable* job)
 
 	if(!pool->terminate_all)
 	{
-		Logger_Log(LOG_DEBUG, "Adding job... Pool job queue count: %d", queue_size(pool->jobs));
-
+		#ifndef KEMMENS_DISABLE_LOGGING
+		#ifndef THREADPOOL_DISABLE_LOGGING
+		Logger_Log(LOG_DEBUG, "KEMMENSLIB::ThreadPool->Adding job... Pool job queue count: %d", queue_size(pool->jobs));
+		#endif
+		#endif
 		queue_push(pool->jobs, job);
 
 		pthread_cond_broadcast(&pool->cond);
@@ -139,7 +157,11 @@ void ThreadPool_JoinAllThreads(ThreadPool* pool)
 {
 	void joinAll(void* thread)
 	{
-		Logger_Log(LOG_INFO, "KEMMENSLIB::ThreadPool->ThreadPool_ExitWhenPossibleWait - Joining thread %p...", thread);
+		#ifndef KEMMENS_DISABLE_LOGGING
+		#ifndef THREADPOOL_DISABLE_LOGGING
+		Logger_Log(LOG_DEBUG, "KEMMENSLIB::ThreadPool->ThreadPool_ExitWhenPossibleWait - Joining thread %p...", thread);
+		#endif
+		#endif
 		pthread_join( *((pthread_t*)thread), NULL );
 	}
 
@@ -163,7 +185,11 @@ void ThreadPool_ClearPendingJobs(ThreadPool* pool)
 		if(actual)
 			free(actual);
 
-		Logger_Log(LOG_INFO, "KEMMENSLIB::ThreadPool->ThreadPool_ClearPendingJobs - Removed job %p", job);
+		#ifndef KEMMENS_DISABLE_LOGGING
+		#ifndef THREADPOOL_DISABLE_LOGGING
+		Logger_Log(LOG_DEBUG, "KEMMENSLIB::ThreadPool->ThreadPool_ClearPendingJobs - Removed job %p", job);
+		#endif
+		#endif
 	}
 
 	pthread_mutex_lock(&pool->lock);

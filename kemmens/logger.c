@@ -48,8 +48,11 @@ void Logger_Log(void (*logFunction)(t_log*, const char*), char* message, ...)
 
 	va_end(arguments);
 
+	#ifndef KEMMENS_LOG_CONSOLE_ONLY
 	logFunction(Logger_GetLog(), formatted);
-
+	#else
+	printf(formatted);
+	#endif
 	free(formatted);
 }
 

@@ -8,9 +8,20 @@
 #include "SocketCommons.h"
 #include <semaphore.h>
 #include <pthread.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <commons/string.h>
+#include <sys/types.h>
+#include <time.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <readline/readline.h>
 
-//Para deshabilitar el logueo interno de este modulo de las kemmens comentar la siguiente linea:
-#define SSER_ENABLE_LOGGING
+//Para deshabilitar el logueo interno de este modulo de las kemmens descomentar la siguiente linea:
+//#define SOCKETSERVER_DISABLE_LOGGING
 
 #define MAXWAITCONNECTIONS 10
 

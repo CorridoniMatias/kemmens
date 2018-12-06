@@ -1,7 +1,4 @@
 #include "kemmens/SocketCommons.h"
-#include <errno.h>
-#include "stdio.h"
-#include <unistd.h>
 
 static ContentHeader* SocketCommons_CreateHeader()
 {
@@ -28,7 +25,9 @@ static ContentHeader* SocketCommons_ReceiveHeader(int socket, int* error_status)
 
 	if(ret < 1)
 	{
-		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveHeader - Error al recibir header, return recv: %d", ret);
+		if(ret < 0) //No mostrar error si es un client disconnect
+			Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveHeader - Error al recibir header, return recv: %d", ret);
+
 		free(header);
 
 		if(error_status != 0)
@@ -74,7 +73,7 @@ static void* SocketCommons_ReceiveDataWithoutHeader(int socket, int expected_siz
 		if(error_status != NULL)
 		{
 			*error_status = errno;
-			Logger_Log(LOG_DEBUG, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - Return recv: %d, errno: %d, error: %s", status, *error_status, strerror(*error_status));
+			Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - Return recv: %d, errno: %d, error: %s", status, *error_status, strerror(*error_status));
 		}
 
 		Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveDataWithoutHeader - Error al recibir datos!");
@@ -111,7 +110,11 @@ void* SocketCommons_ReceiveData(int socket, int* message_type, int* message_leng
 	*message_type = header->message_type;
 	free(header);
 
+	#ifndef KEMMENS_DISABLE_LOGGING
+	#ifndef SOCKETCOMMONS_DISABLE_LOGGING
 	Logger_Log(LOG_DEBUG, "KEMMENSLIB::SOCKETCOMMONS->SocketCommons_ReceiveData - Recibiendo datos, length: %d, content type: %d", len, *message_type);
+	#endif
+	#endif
 
 	if(len == 0)
 		return NULL;
@@ -146,10 +149,10 @@ void SocketCommons_CloseSocket(int socketFD)
 {
       if((close(socketFD) !=0 ))
      {
-    	 Logger_Log(LOG_ERROR, "No se pudo cerrar el socket descripto por %d", socketFD);
+    	 Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->No se pudo cerrar el socket descripto por %d", socketFD);
     	 return;
      }
-     Logger_Log(LOG_ERROR, "Socket descripto por %d cerrado, fin de la conexion a traves de el", socketFD);
+     Logger_Log(LOG_ERROR, "KEMMENSLIB::SOCKETCOMMONS->Socket descripto por %d cerrado, fin de la conexion a traves de el", socketFD);
      return;
  }
 

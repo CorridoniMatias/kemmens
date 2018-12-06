@@ -6,9 +6,6 @@
 #include <string.h>
 #include "SocketCommons.h"
 
-//Para deshabilitar el logueo interno de este modulo de las kemmens comentar la siguiente linea:
-#define SCLI_ENABLE_LOGGING
-
 /**
  * 		ACCION: Establece una conexion como cliente a un servidor con cierta IP, en cierto puerto
  * 		PARAMETROS:

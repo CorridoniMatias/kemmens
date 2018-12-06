@@ -7,9 +7,6 @@
 #include <string.h>
 #include <commons/string.h>
 
-//Para deshabilitar el logueo interno de este modulo de las kemmens comentar la siguiente linea:
-#define STRINGUTILS_ENABLE_LOGGING
-
 
 char* StringUtils_Format(char* plain, ...);
 

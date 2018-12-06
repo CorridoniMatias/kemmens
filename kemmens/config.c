@@ -90,9 +90,9 @@ bool archivoConfigIncompleto(t_config* archivoConfig, char** campos) {
 }
 
 void archivoConfigEsInvalido() {
-	#ifdef KEMMENS_ENABLE_LOGGING
-	#ifdef CONFIG_ENABLE_LOGGING
-	Logger_Log(LOG_DEBUG, "KEMMENS::Config -> Archivo de configuracion invalido\n");
+	#ifndef KEMMENS_DISABLE_LOGGING
+	#ifndef CONFIG_DISABLE_LOGGING
+	Logger_Log(LOG_DEBUG, "KEMMENSLIB::Config -> Archivo de configuracion invalido");
 	#endif
 	#endif
 	exit(EXIT_FAILURE);

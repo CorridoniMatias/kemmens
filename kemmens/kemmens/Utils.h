@@ -4,6 +4,7 @@
 //Descomentar la siguiente linea para activar el util de md5, requiere incluir la biblioteca -lcrypto en el proyecto donde se usen las kemmens
 //#define ENABLE_MD5
 
+
 #ifdef ENABLE_MD5
 #include <openssl/md5.h>
 #endif
@@ -14,9 +15,6 @@
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
 #include "StringUtils.h"
-
-//Para deshabilitar el logueo interno de este modulo de las kemmens comentar la siguiente linea:
-#define UTILS_ENABLE_LOGGING
 
 //Define un puntero con el tipo de datos indicado y el valor inicial provisto. NO SIRVE PARA char*
 #define declare_and_init(pointer_name, data_type, init_value) 								\

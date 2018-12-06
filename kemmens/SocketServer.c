@@ -1,17 +1,5 @@
 #include "kemmens/SocketServer.h"
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <commons/string.h>
-#include <sys/types.h>
-#include <time.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <readline/readline.h>
-
 #define STDIN 0 //Input basico
 
 int sock = -1;
@@ -49,11 +37,15 @@ void SocketServer_Start(char name[5], int port)
 
 	if(sock == -1)
 	{
-		Logger_Log(LOG_ERROR, "Error al abrir socket del servidor!");
+		#ifndef KEMMENS_DISABLE_LOGGING
+		#ifndef SOCKETSERVER_DISABLE_LOGGING
+		Logger_Log(LOG_ERROR, "KEMMENSLIB::SocketServer-> Error al abrir socket del servidor!");
+		#endif
+		#endif
 		exit_gracefully(EXIT_FAILURE);
 	}
 
-	Logger_Log(LOG_INFO, "Socket de servidor '%s' creado con exito.", alias);
+	Logger_Log(LOG_DEBUG, "KEMMENSLIB::SocketServer-> Socket de servidor '%s' creado con exito.", alias);
 
 
 	serv_addr.sin_family = AF_INET;
@@ -62,7 +54,11 @@ void SocketServer_Start(char name[5], int port)
 
 	if( bind(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
 	{
-		Logger_Log(LOG_ERROR, "Error al bindear servidor '%s'!", alias);
+		#ifndef KEMMENS_DISABLE_LOGGING
+		#ifndef SOCKETSERVER_DISABLE_LOGGING
+		Logger_Log(LOG_ERROR, "KEMMENSLIB::SocketServer-> Error al bindear servidor '%s'!", alias);
+		#endif
+		#endif
 		exit_gracefully(EXIT_FAILURE);
 	}
 }
@@ -74,12 +70,19 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 
 	if(listen(sock, MAXWAITCONNECTIONS) < 0)
 	{
-		Logger_Log(LOG_ERROR,"'%s' -> Error al escuchar conexiones!", alias);
+		#ifndef KEMMENS_DISABLE_LOGGING
+		#ifndef SOCKETSERVER_DISABLE_LOGGING
+		Logger_Log(LOG_ERROR,"KEMMENSLIB::SocketServer-> '%s' -> Error al escuchar conexiones!", alias);
+		#endif
+		#endif
 		exit_gracefully(EXIT_FAILURE);
 	}
 
-	Logger_Log(LOG_INFO, "Servidor '%s' escuchando por conexiones entrantes...", alias);
-
+	#ifndef KEMMENS_DISABLE_LOGGING
+	#ifndef SOCKETSERVER_DISABLE_LOGGING
+	Logger_Log(LOG_DEBUG, "KEMMENSLIB::SocketServer-> Servidor '%s' escuchando por conexiones entrantes...", alias);
+	#endif
+	#endif
 	connections = list_create();
 	//ignoredSockets = list_create();
 	pthread_mutex_init(&connections_lock, NULL);
@@ -124,7 +127,11 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 
 		if ((sel < 0) && (errno!=EINTR))
 		{
-			Logger_Log(LOG_ERROR, "'%s' -> Error en select = %d", alias, sel);
+			#ifndef KEMMENS_DISABLE_LOGGING
+			#ifndef SOCKETSERVER_DISABLE_LOGGING
+			Logger_Log(LOG_ERROR, "KEMMENSLIB::SocketServer-> '%s' -> Error en select = %d", alias, sel);
+			#endif
+			#endif
 			continue;
 		}
 
@@ -134,11 +141,19 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 			connected_socket = accept(sock, (struct sockaddr*)NULL, NULL);
 			if(connected_socket < 0)
 			{
-				Logger_Log(LOG_ERROR, "'%s' -> Error al aceptar conexion entrante... skipeando conexion.", alias);
+				#ifndef KEMMENS_DISABLE_LOGGING
+				#ifndef SOCKETSERVER_DISABLE_LOGGING
+				Logger_Log(LOG_ERROR, "KEMMENSLIB::SocketServer-> '%s' -> Error al aceptar conexion entrante... skipeando conexion.", alias);
+				#endif
+				#endif
 				continue;
 			}
 
-			Logger_Log(LOG_INFO, "'%s' -> Conexion entrante aceptada en %d", alias, connected_socket);
+			#ifndef KEMMENS_DISABLE_LOGGING
+			#ifndef SOCKETSERVER_DISABLE_LOGGING
+			Logger_Log(LOG_DEBUG, "KEMMENSLIB::SocketServer-> '%s' -> Conexion entrante aceptada en %d", alias, connected_socket);
+			#endif
+			#endif
 
 			ServerClient* client = SocketServer_CreateClient(connected_socket);
 			pthread_mutex_lock(&connections_lock);
@@ -231,8 +246,11 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 						//Si hay algun thread esperando datos en este socketID entonces no tenemos que llamar a OnPacketArrived, le derivamos la informacion al thread que la espera. Hablo en singular porque no tiene sentido que dos threads esten esperando en paralelo datos sobre EL MISMO socket.
 						if(currclient->isWaitingForData)
 						{
+							#ifndef KEMMENS_DISABLE_LOGGING
+							#ifndef SOCKETSERVER_DISABLE_LOGGING
 							Logger_Log(LOG_DEBUG, "KEMMENSLIB -> SOCKETSERVER :: Datos recibidos de %d, derivando al thread a la espera de los mismos. OnPacketArrived no sera llamado!", currclient->socketID);
-
+							#endif
+							#endif
 
 							OnArrivedData* arriveData = SocketServer_CreateOnArrivedData();
 							arriveData->calling_SocketID = currclient->socketID;
@@ -289,11 +307,15 @@ void SocketServer_TerminateAllConnections()
 			sem_post(&client->waitForData);
 		}
 
-		Logger_Log(LOG_INFO, "'%s' -> Cerrando conexion %d ", alias, client->socketID);
+		#ifndef KEMMENS_DISABLE_LOGGING
+		#ifndef SOCKETSERVER_DISABLE_LOGGING
+		Logger_Log(LOG_DEBUG, "KEMMENSLIB::SocketServer-> '%s' -> Cerrando conexion %d ", alias, client->socketID);
+		#endif
+		#endif
 
 		if(close( client->socketID ) < 0)
 		{
-			Logger_Log(LOG_ERROR, "'%s' -> Error al cerrar conexion %d!", alias, client->socketID);
+			Logger_Log(LOG_ERROR, "KEMMENSLIB::SocketServer-> '%s' -> Error al cerrar conexion %d!", alias, client->socketID);
 		}
 	}
 	pthread_mutex_lock(&connections_lock);
