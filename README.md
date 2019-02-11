@@ -12,18 +12,23 @@ Es una biblioteca multiuso programada en C que brinda una abstracción sobre las
 - Thread Pool: Un [Thread Pool](https://en.wikipedia.org/wiki/Thread_pool).
 - Thread Manager: Utils para manejar hilos.
 - Command Interpreter: Básicamente un parser que ejecuta una función indicada por el usuario ante un input específico.
-- Logger: Un wrapper del log que viene con las [Commons de la cátedra de UTNSO](https://github.com/sisoputnfrba/so-commons-library).
+- Logger: Un wrapper del log de las [Commons de la cátedra de UTNSO][commons_url].
 - Config Manager: Extensión de las funcionalidades que provee config de las Commons.
 - Utils: Funcionalidades que no tienen una categoría.
+
+Si bien la biblioteca está pensada para ser utilizada en el TP de la materia [Sistemas Operativos](https://www.utnso.com/) de la UTN FRBA, puede ser utilizada con cualquier finalidad.
 
 ## ¿Por qué?
 Cuando desarrollamos las Kemmens lo hicimos con el objetivo de poder abstraer al máximo aquella lógica que ibamos a usar comúnmente para poder abocarnos de lleno a las funcionalidades propias del TP. De esta forma nos aseguramos de no perder el tiempo reinventando la rueda para cada proceso requerido.
 
+## ¿Es lo mismo que las [Commons][commons_url]?
+No, esta biblioteca ataca problemas comunes distintos a los de las Commmons, si bien en las Kemmens hay algunos wrappers de cosas de las Commons, en general las soluciones brindadas son para problemas distintos.
+
 ## ¿Podemos usarla?
 Si! Cuando entregamos el TP consultamos con la cátedra si podíamos dejar la biblioteca como código abierto y nos lo permitieron. En teoría no debería haber ningún problema con que usen las funcionalidades que trae (de todas formas consulten con sus ayudantes).
 
-## ¿Puedo colaborar?
-Claro que si, simplemente hace un pull request.
+## Arreglos, mejoras, colaboración
+La mayor parte de la biblioteca la armamos en paralelo con el TP por lo que hay muchas cosas que no están 100% correctas o como nosotros quisieramos: hay código repetido, comentarios indeseados, etc. En caso de querer colaborar con arreglos o nuevas funcionalidades podés hacerlo sin ningún problema haciendo un pull-request! Tanto nosotros como los que vayan a usar la nueva versión de la biblioteca te lo vamos a agradecer.
 
 ## Ejemplos
 ### Socket Server
@@ -64,7 +69,7 @@ Claro que si, simplemente hace un pull request.
     	actions.OnClientDisconnect = ClientDisconnected;
     	actions.OnReceiveError = ClientError;
     	SocketServer_ListenForConnection(actions); //Este hilo se va a bloquear acá hasta que: llegue un paquete, se conecte un cliente, se desconecte un cliente o que haya input del teclado!
-	}
+    }
 ```
 
 Como podemos ver por el código es muy fácil levantar un server de sockets con la biblioteca, algo que llevaría mucho más tiempo si se tuviera que hacer desde 0. Los eventos que registramos con el server son:
@@ -86,5 +91,12 @@ Si observamos la semántica del select() observamos que dice:
        corresponding I/O operation (e.g., read(2) without blocking, or a
        sufficiently small write(2)).
 
-Es decir, habla de File Descriptors (FD), en ningún lado dice que únicamente es capaz de manejar sockets o que se debería utilizar para eso y nada más. Ahora, ¿qué es un FD? Linux tiene una tabla de archivos abiertos por proceso, el index de cada entrada de esa tabla es un FD, o sea un número. Cabe destacar que en Linux todo es un archivo, el teclado es un archivo, un socket abierto es un archivo, la salida por pantalla es un archiv, etc. Además cada vez que un proceso inicia Linux automáticamente asigna 3 archivos: STDOUT(0), STDIN(1), STDERR(2). De esta forma la entrada por teclado tiene identificador 0 (se puede leer más [acá](https://en.wikipedia.org/wiki/File_descriptor)).
+Es decir, habla de File Descriptors (FD), en ningún lado dice que únicamente es capaz de manejar sockets o que se debería utilizar para eso y nada más. Ahora, ¿qué es un FD? Linux tiene una tabla de archivos abiertos por proceso, el index de cada entrada de esa tabla es un FD, o sea un número. Cabe destacar que en Linux todo es un archivo, el teclado es un archivo, un socket abierto es un archivo, la salida por pantalla es un archivo, etc. Además cada vez que un proceso inicia Linux automáticamente asigna 3 archivos: STDOUT(0), STDIN(1), STDERR(2). De esta forma la entrada por teclado tiene identificador 0 (se puede leer más [acá](https://en.wikipedia.org/wiki/File_descriptor)).
 Entonces, es un error de concepto manejar la consola con un select()? __NO!__ Con lo que acabamos de ver es más que suficiente para decir que no lo es.
+
+
+## Dependencias
+
+La biblioteca tiene una dependencia principal: La biblioteca [Commons de la cátedra de UTNSO][commons_url]. Vean el link para saber como instalarla.
+
+[commons_url]: https://github.com/sisoputnfrba/so-commons-library
