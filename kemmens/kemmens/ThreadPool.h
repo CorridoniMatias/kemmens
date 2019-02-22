@@ -6,7 +6,7 @@
 #include "commons/collections/queue.h"
 
 //Para deshabilitar el logueo interno de este modulo de las kemmens descomentar la siguiente linea:
-//#define THREADPOOL_DISABLE_LOGGING
+#define THREADPOOL_DISABLE_LOGGING
 
 
 /**

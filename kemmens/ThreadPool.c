@@ -43,7 +43,7 @@ static void* ThreadPool_BasicOperation(void* ownerPool)
 
 			#ifndef KEMMENS_DISABLE_LOGGING
 			#ifndef THREADPOOL_DISABLE_LOGGING
-			Logger_Log(LOG_DEBUG, "KEMMENSLIB::ThreadPool->Thread %p Finished, free threads: %d", &this, owner->free_threads+1);
+			Logger_Log(LOG_DEBUG, "KEMMENSLIB::ThreadPool->Thread %p Finished, free threads: %d", &this, owner->free_threads);
 			#endif
 			#endif
 			continue;

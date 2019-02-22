@@ -181,6 +181,13 @@ void SocketServer_CleanOnArrivedData(OnArrivedData* data);
  */
 OnArrivedData* SocketServer_WakeMeUpWhenDataIsAvailableOn(int socketToWatch);
 
+/*
+ * 		Reserva un socket para hacer un posterior SocketServer_WakeMeUpWhenDataIsAvailableOn,
+ * 		sirve para arreglar impedancias entre la velocidad de procesamiento entre el server y
+ * 		el cliente.
+ */
+bool SocketServer_ReserveSocket(int socketToWatch);
+
 
 /*
 t_list* SocketServer_GetIgnoredSockets();

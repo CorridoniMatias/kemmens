@@ -87,11 +87,11 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 	//ignoredSockets = list_create();
 	pthread_mutex_init(&connections_lock, NULL);
 
-	int connlistsize, currconn, connected_socket, sel, max_fd = sock; //el descriptor maximo empieza como sock (el master y unico que hay por ahora) pero puede ser mas grande a medida que lleguen sockets.
+	int connlistsize=0, currconn=0, connected_socket, sel, max_fd = sock; //el descriptor maximo empieza como sock (el master y unico que hay por ahora) pero puede ser mas grande a medida que lleguen sockets.
 	ServerClient* currclient;
 	//Si recibimos una funcion para manejar el procesamiento del input por linea se lo pasamos a readline.
 	if(actions.OnConsoleInputReceived != 0)
-		rl_callback_handler_install("> ", (rl_vcpfunc_t*) actions.OnConsoleInputReceived);
+		rl_callback_handler_install("> ", actions.OnConsoleInputReceived);
 
 
 	while(1)
@@ -112,12 +112,10 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 			FD_SET(currclient->socketID, &descriptores_clientes); //Registramos al cliente como un descriptor valido
 		}
 		pthread_mutex_unlock(&connections_lock);
-
 		//Bloqueamos hasta que llegue algo.
 		sel = select( max_fd + STDIN + 1 // la cantidad va a ser max_fd + STDIN + 1 porque todos los sockets que nos lleguen tanto del teclado como de red tienen que entrar
 							, &descriptores_clientes // Le pasamos los descriptores.
 							, NULL , NULL , NULL); //Queremos que nuestro select bloquee indefinidamente, sino le pasamos un timeout.
-
 		/*
 		 * La razon por la cual cada vez que empieza el while hay que volver a inicializar los descriptores es que
 		 * cuando un cliente se va queda el socket abierto y como valido en la lista de FDs entonces el select siempre se va a desbloquear
@@ -215,7 +213,9 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 						{
 							if(actions.OnClientDisconnect != NULL)
 									actions.OnClientDisconnect(currclient->socketID);
-
+							//Se hace el lock aca porque el hilo que se despierta (si hay alguno) puede ser que llame a WakeMeUpWhenDataIsAvailableOn
+							//y obtenga el lock de la lista e intente hacer algo con un cliente no valido.
+							pthread_mutex_lock(&connections_lock);
 							if(currclient->isWaitingForData)
 							{
 								currclient->arriveData = NULL;
@@ -223,8 +223,6 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 								sem_post(&currclient->waitForData);
 							}
 
-
-							pthread_mutex_lock(&connections_lock);
 							SocketServer_DestroyClient(list_remove(connections, i)); //Lo ultimo que hacemos es el free por si algun otro recurso hace referencia al espacio de memoria del int malloceado que representa al descriptor del socket.
 							pthread_mutex_unlock(&connections_lock);
 
@@ -278,9 +276,10 @@ void SocketServer_ListenForConnection(SocketServer_ActionsListeners actions)
 				}
 
 			}
-
-			if((currconn == -1 || connlistsize == 0) && actions.OnConsoleInputReceived != NULL) //Input de teclado
-					rl_callback_read_char(); //Readline nos hace el favor de ir acumulando los chars hasta recibir <enter>, ahi le manda la linea a consoleInputHandle.
+//			if((currconn == -1 || connlistsize == 0) && actions.OnConsoleInputReceived != NULL){ //Input de teclado{
+			if (FD_ISSET(STDIN, &descriptores_clientes) && actions.OnConsoleInputReceived != NULL){
+				rl_callback_read_char(); //Readline nos hace el favor de ir acumulando los chars hasta recibir <enter>, ahi le manda la linea a consoleInputHandle.
+			}
 		}
 		if(closeAll == 1)
 			break;
@@ -411,4 +410,21 @@ OnArrivedData* SocketServer_WakeMeUpWhenDataIsAvailableOn(int socketToWatch)
 	}
 
 	return NULL;
+}
+
+bool SocketServer_ReserveSocket(int socketToWatch) {
+	ServerClient* client;
+	pthread_mutex_lock(&connections_lock);
+	bool socketFound(void* data) {
+		ServerClient* currclient = data;
+		return currclient->socketID == socketToWatch;
+	}
+	client = list_find(connections, socketFound);
+	pthread_mutex_unlock(&connections_lock);
+
+	if (client != NULL) {
+		client->isWaitingForData = true;
+		return true;
+	}
+	return false;
 }
